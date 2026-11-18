@@ -265,7 +265,7 @@ export const BrandsPanel: React.FC<BrandsPanelProps> = ({ userRole = 'viewer' })
           </div>
         </SpotlightCard>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '1.25rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))', gap: '1.25rem' }}>
           {brands.map((b) => (
             <SpotlightCard key={b.id} spotlightColor="rgba(34, 197, 94, 0.12)">
               <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', height: '100%', justifyContent: 'space-between' }}>
