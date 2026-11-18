@@ -93,14 +93,14 @@ export const UsersPanel: React.FC<{ userRole: string }> = ({ userRole }) => {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--wgy-space-6)' }}>
+      <div className="wgy-page-header">
         <div>
-          <h1 style={{ fontSize: 'var(--wgy-title)', fontWeight: 800, color: '#fff' }}>Pengguna IT & Akses</h1>
+          <h1 style={{ fontSize: 'var(--wgy-title)', fontWeight: 800, color: '#fff' }}>Pengguna IT &amp; Akses</h1>
           <p style={{ color: 'var(--wgy-text-muted)', fontSize: 'var(--wgy-text-sm)' }}>
             Manajemen akun teknis portal pusat, peran RBAC (Superadmin, Operator, Viewer), dan pembatasan sesi
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 'var(--wgy-space-3)' }}>
+        <div className="wgy-page-header-actions">
           <button className="wgy-btn wgy-btn-secondary wgy-btn-sm" onClick={fetchUsers} disabled={loading}>
             <RefreshCw size={14} className={loading ? 'spin' : ''} /> Segarkan
           </button>

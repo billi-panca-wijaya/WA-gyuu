@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Database,
@@ -52,8 +52,97 @@ export const SettingsPanel: React.FC = () => {
   const [elevateWindowMinutes, setElevateWindowMinutes] = useState('5');
   const [lockoutAttempts, setLockoutAttempts] = useState('5');
 
-  const handleSave = (e: React.FormEvent) => {
+  const applySettings = (s: any) => {
+    if (!s) return;
+    if (s.dbType) setDbType(s.dbType);
+    if (s.dbHost) setDbHost(s.dbHost);
+    if (s.dbPort) setDbPort(s.dbPort);
+    if (s.dbName) setDbName(s.dbName);
+    if (s.dbUser !== undefined) setDbUser(s.dbUser);
+    if (s.dbPass !== undefined) setDbPass(s.dbPass);
+    if (s.dbUri) setDbUri(s.dbUri);
+    if (s.sqlitePath) setSqlitePath(s.sqlitePath);
+    if (s.engineType) setEngineType(s.engineType);
+    if (s.qrTimeout) setQrTimeout(s.qrTimeout);
+    if (s.maxReconnect) setMaxReconnect(s.maxReconnect);
+    if (s.sessionPath) setSessionPath(s.sessionPath);
+    if (s.messageRetention) setMessageRetention(s.messageRetention);
+    if (s.otpLength) setOtpLength(s.otpLength);
+    if (s.otpTtl) setOtpTtl(s.otpTtl);
+    if (s.otpCooldown) setOtpCooldown(s.otpCooldown);
+    if (s.otpMaxAttempts) setOtpMaxAttempts(s.otpMaxAttempts);
+    if (s.idleTimeout) setIdleTimeout(s.idleTimeout);
+    if (s.maxSessionHours) setMaxSessionHours(s.maxSessionHours);
+    if (s.elevateWindowMinutes) setElevateWindowMinutes(s.elevateWindowMinutes);
+    if (s.lockoutAttempts) setLockoutAttempts(s.lockoutAttempts);
+  };
+
+  useEffect(() => {
+    // 1. Instant load from localStorage
+    if (typeof window !== 'undefined') {
+      try {
+        const local = localStorage.getItem('wgy_gateway_settings');
+        if (local) {
+          applySettings(JSON.parse(local));
+        }
+      } catch {}
+    }
+
+    // 2. Fetch from backend API
+    fetch('/v1/ops/settings')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data) {
+          applySettings(json.data);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('wgy_gateway_settings', JSON.stringify(json.data));
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    const payload = {
+      dbType,
+      dbHost,
+      dbPort,
+      dbName,
+      dbUser,
+      dbPass,
+      dbUri,
+      sqlitePath,
+      engineType,
+      qrTimeout,
+      maxReconnect,
+      sessionPath,
+      messageRetention,
+      otpLength,
+      otpTtl,
+      otpCooldown,
+      otpMaxAttempts,
+      idleTimeout,
+      maxSessionHours,
+      elevateWindowMinutes,
+      lockoutAttempts,
+    };
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('wgy_gateway_settings', JSON.stringify(payload));
+      window.dispatchEvent(new Event('storage'));
+    }
+
+    try {
+      await fetch('/v1/ops/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    } catch {
+      // ignore
+    }
+
     setSavedNotice(true);
     setTimeout(() => setSavedNotice(false), 3000);
   };
@@ -65,7 +154,7 @@ export const SettingsPanel: React.FC = () => {
       transition={{ duration: 0.35, ease: 'easeOut' }}
     >
       {/* Page Title */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.75rem' }}>
+      <div className="wgy-page-header">
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.02em', marginBottom: '0.25rem' }}>
             Pengaturan &amp; Infrastruktur Gateway
@@ -94,50 +183,38 @@ export const SettingsPanel: React.FC = () => {
       </div>
 
       {/* Tabs Navigation */}
-      <div style={{
-        display: 'flex',
-        gap: '0.5rem',
-        marginBottom: '1.5rem',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
-        paddingBottom: '0.5rem',
-        overflowX: 'auto',
-      }}>
+      <div className="wgy-tabs-nav">
         <button
           onClick={() => setActiveTab('database')}
-          className={`wgy-btn wgy-btn-sm ${activeTab === 'database' ? 'wgy-btn-primary' : 'wgy-btn-secondary'}`}
-          style={{ borderRadius: '0.5rem', fontWeight: 700, height: '2.4rem' }}
+          className={`wgy-btn wgy-btn-sm wgy-tab-btn ${activeTab === 'database' ? 'wgy-btn-primary' : 'wgy-btn-secondary'}`}
         >
           <Database size={15} /> Database &amp; Penyimpanan
         </button>
 
         <button
           onClick={() => setActiveTab('engine')}
-          className={`wgy-btn wgy-btn-sm ${activeTab === 'engine' ? 'wgy-btn-primary' : 'wgy-btn-secondary'}`}
-          style={{ borderRadius: '0.5rem', fontWeight: 700, height: '2.4rem' }}
+          className={`wgy-btn wgy-btn-sm wgy-tab-btn ${activeTab === 'engine' ? 'wgy-btn-primary' : 'wgy-btn-secondary'}`}
         >
           <Cpu size={15} /> WhatsApp Engine
         </button>
 
         <button
           onClick={() => setActiveTab('otp')}
-          className={`wgy-btn wgy-btn-sm ${activeTab === 'otp' ? 'wgy-btn-primary' : 'wgy-btn-secondary'}`}
-          style={{ borderRadius: '0.5rem', fontWeight: 700, height: '2.4rem' }}
+          className={`wgy-btn wgy-btn-sm wgy-tab-btn ${activeTab === 'otp' ? 'wgy-btn-primary' : 'wgy-btn-secondary'}`}
         >
           <Key size={15} /> Parameter Keamanan OTP
         </button>
 
         <button
           onClick={() => setActiveTab('portal_auth')}
-          className={`wgy-btn wgy-btn-sm ${activeTab === 'portal_auth' ? 'wgy-btn-primary' : 'wgy-btn-secondary'}`}
-          style={{ borderRadius: '0.5rem', fontWeight: 700, height: '2.4rem' }}
+          className={`wgy-btn wgy-btn-sm wgy-tab-btn ${activeTab === 'portal_auth' ? 'wgy-btn-primary' : 'wgy-btn-secondary'}`}
         >
           <Lock size={15} /> Sesi IT &amp; Autentikasi
         </button>
 
         <button
           onClick={() => setActiveTab('network')}
-          className={`wgy-btn wgy-btn-sm ${activeTab === 'network' ? 'wgy-btn-primary' : 'wgy-btn-secondary'}`}
-          style={{ borderRadius: '0.5rem', fontWeight: 700, height: '2.4rem' }}
+          className={`wgy-btn wgy-btn-sm wgy-tab-btn ${activeTab === 'network' ? 'wgy-btn-primary' : 'wgy-btn-secondary'}`}
         >
           <Network size={15} /> Jaringan &amp; Logging
         </button>

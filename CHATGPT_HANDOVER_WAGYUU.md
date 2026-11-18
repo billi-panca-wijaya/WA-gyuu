@@ -243,6 +243,41 @@ npm test
 ```
 *Hasil:* 5 test suites lulus, 21 tests passed (100% lulus).
 
+---
+
+## 8. Pembaruan Fitur & Perbaikan Terkini (Update UI/UX & Dynamic Settings)
+
+Pada iterasi ini, seluruh poin masukan dari pengguna telah diselesaikan dan diverifikasi:
+
+1. **Header Sticky & Anti-Overflow Mobile:**
+   - Header atas (`.wgy-header`) kini berstatus `sticky` dengan efek glassmorphism (`backdrop-filter: blur(12px)`). Ketika pengguna menggulir halaman, header tetap menempel di atas layar.
+   - Pada layar perangkat seluler (lebar < 860px dan < 640px), badge prototype di header disembunyikan otomatis, teks judul dan username staf IT dipangkas dengan elipsis (`text-overflow: ellipsis`), dan tombol Keluar menampilkan ikon saja sehingga elemen tidak lagi bertumpuk atau keluar layar.
+
+2. **Tombol Scroll Mengambang (Floating Action Buttons - FAB):**
+   - Menambahkan tombol bulat mengambang (sticky) di sudut kanan bawah (`.wgy-scroll-fab-container`) dengan ikon `ChevronUp` dan `ChevronDown`.
+   - Pengguna dapat langsung melompat ke posisi paling atas atau paling bawah halaman dengan satu ketukan halus (`smooth scroll`).
+
+3. **Perbaikan Button & Form Overflow:**
+   - Menggunakan kelas responsif `.wgy-page-header` dan `.wgy-page-header-actions` pada seluruh panel (`UsersPanel`, `BrandsPanel`, `SummaryPanel`, `WebhookPanel`, `AuditLogsPanel`, `SystemHealthPanel`).
+   - Tombol "+ Tambah Pengguna IT" dan tombol aksi lainnya kini otomatis menyesuaikan lebar layar ponsel tanpa terpotong atau keluar batas kontainer.
+
+4. **Navigasi Tab Pengaturan Responsif:**
+   - Tab pada panel Pengaturan (`.wgy-tabs-nav` & `.wgy-tab-btn`) kini mendukung scroll sentuh horizontal (`overflow-x: auto`) dengan `flex-shrink: 0; white-space: nowrap;`. Judul tab seperti "Parameter Keamanan OTP" tetap rapi satu baris dan tidak terpotong.
+
+5. **Persistensi Pengaturan Pangkalan Data (MongoDB & SQLite) & Refleksi di Ringkasan:**
+   - Menyediakan API backend baru: `GET /v1/ops/settings` dan `POST /v1/ops/settings`.
+   - Konfigurasi tersimpan persisten di `/app/data/gateway-settings.json` (volume persisten Docker) serta tersimpan cadangan di `localStorage ('wgy_gateway_settings')`.
+   - Ketika pengguna memilih **MongoDB** (atau database lain) di halaman Pengaturan dan menyimpannya, konfigurasi tersebut **tidak akan kembali ke SQLite saat halaman di-refresh**.
+   - Pada halaman **Ringkasan Operasional**, kartu penyimpanan data kini mendeteksi driver aktif secara dinamis: jika pengguna memilih MongoDB, ringkasan akan menampilkan `MongoDB (NoSQL Document Store)` dengan deskripsi dokumen terdistribusi.
+
+6. **Persistensi State Menu Navigasi Saat Refresh:**
+   - State `activeMenu` kini tersimpan di `localStorage ('wgy_active_menu')` dan tersinkronisasi dengan URL hash (`#settings`, `#brands`, dll.).
+   - Pengguna yang berada di menu Pengaturan tidak akan lagi terlempar ke halaman Ringkasan saat melakukan refresh browser.
+
+---
+
+*Dokumen ini dibuat secara resmi untuk memastikan kontinuitas pengembangan, akurasi penalaran AI, dan integritas arsitektur sistem WAgyuu.*
+
 ### Perintah Docker di VPS:
 ```bash
 # Cek status kontainer

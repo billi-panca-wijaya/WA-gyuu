@@ -302,4 +302,21 @@ export class AdminOpsController {
     const data = await this.platformAuthService.updateUser(actor, id, body);
     return { data };
   }
+
+  // -------------------------------------------------------------
+  // Infrastructure Settings
+  // -------------------------------------------------------------
+  @Get('settings')
+  @OpsAuth({ requireRole: 'viewer' })
+  async getSettings() {
+    const data = await this.opsService.getSettings();
+    return { data };
+  }
+
+  @Post('settings')
+  @OpsAuth({ requireRole: 'operator' })
+  async updateSettings(@Body() body: any) {
+    const data = await this.opsService.updateSettings(body);
+    return { data };
+  }
 }

@@ -3,10 +3,14 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Optional,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
+import * as fs from 'fs';
+import * as path from 'path';
 import { Brand } from '../brands/entities/brand.entity';
 import { ApiClient } from '../brands/entities/api-client.entity';
 import { WhatsAppSession } from '../whatsapp-sessions/entities/whatsapp-session.entity';
@@ -17,6 +21,8 @@ import { PlatformUser } from '../platform-auth/entities/platform-user.entity';
 
 @Injectable()
 export class AdminOpsService {
+  private inMemorySettings: any = null;
+
   constructor(
     @InjectRepository(Brand)
     private readonly brandRepo: Repository<Brand>,
@@ -29,7 +35,76 @@ export class AdminOpsService {
     @InjectRepository(OtpDelivery)
     private readonly deliveryRepo: Repository<OtpDelivery>,
     private readonly auditService: AuditService,
+    @Optional()
+    private readonly configService?: ConfigService,
   ) {}
+
+  private getSettingsFilePath(): string {
+    const candidates = [
+      process.env.SETTINGS_FILE,
+      '/app/data/gateway-settings.json',
+      path.resolve(process.cwd(), 'data', 'gateway-settings.json'),
+      path.resolve(__dirname, '../../../../data/gateway-settings.json'),
+    ];
+    for (const c of candidates) {
+      if (c && fs.existsSync(path.dirname(c))) {
+        return c;
+      }
+    }
+    const defaultPath = path.resolve(process.cwd(), 'data', 'gateway-settings.json');
+    try {
+      fs.mkdirSync(path.dirname(defaultPath), { recursive: true });
+    } catch {}
+    return defaultPath;
+  }
+
+  async getSettings(): Promise<any> {
+    if (this.inMemorySettings) {
+      return this.inMemorySettings;
+    }
+    const filePath = this.getSettingsFilePath();
+    if (fs.existsSync(filePath)) {
+      try {
+        const raw = fs.readFileSync(filePath, 'utf8');
+        this.inMemorySettings = JSON.parse(raw);
+        return this.inMemorySettings;
+      } catch {}
+    }
+    this.inMemorySettings = {
+      dbType: 'sqlite',
+      dbHost: '127.0.0.1',
+      dbPort: '27017',
+      dbName: 'wagyuu',
+      dbUser: '',
+      dbPass: '',
+      dbUri: 'mongodb://127.0.0.1:27017/wagyuu',
+      sqlitePath: '/app/data/wagyuu.sqlite',
+      engineType: 'baileys',
+      qrTimeout: '60',
+      maxReconnect: '5',
+      sessionPath: '/app/data/sessions',
+      messageRetention: '1',
+      otpLength: '4',
+      otpTtl: '300',
+      otpCooldown: '30',
+      otpMaxAttempts: '5',
+      idleTimeout: '1440',
+      maxSessionHours: '720',
+      elevateWindowMinutes: '15',
+      lockoutAttempts: '5',
+    };
+    return this.inMemorySettings;
+  }
+
+  async updateSettings(newSettings: any): Promise<any> {
+    const current = await this.getSettings();
+    this.inMemorySettings = { ...current, ...newSettings };
+    try {
+      const filePath = this.getSettingsFilePath();
+      fs.writeFileSync(filePath, JSON.stringify(this.inMemorySettings, null, 2), 'utf8');
+    } catch {}
+    return this.inMemorySettings;
+  }
 
   // -------------------------------------------------------------
   // Summary & Health
@@ -49,6 +124,8 @@ export class AdminOpsService {
     const totalDeliveries = await this.deliveryRepo.count();
     const sentDeliveries = await this.deliveryRepo.count({ where: { status: 'delivered' } });
     const failedDeliveries = await this.deliveryRepo.count({ where: { status: 'failed' } });
+
+    const settings = await this.getSettings();
 
     return {
       brands: {
@@ -79,6 +156,7 @@ export class AdminOpsService {
         node_version: process.version,
         environment: process.env.NODE_ENV || 'production',
         status: 'operational',
+        database_driver: settings.dbType || 'sqlite',
       },
     };
   }

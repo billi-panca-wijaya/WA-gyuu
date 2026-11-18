@@ -27,16 +27,18 @@ export const AuditLogsPanel: React.FC = () => {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--wgy-space-6)' }}>
+      <div className="wgy-page-header">
         <div>
-          <h1 style={{ fontSize: 'var(--wgy-title)', fontWeight: 800, color: '#fff' }}>Log & Audit Jejak Rekam</h1>
+          <h1 style={{ fontSize: 'var(--wgy-title)', fontWeight: 800, color: '#fff' }}>Log &amp; Audit Jejak Rekam</h1>
           <p style={{ color: 'var(--wgy-text-muted)', fontSize: 'var(--wgy-text-sm)' }}>
             Jejak aktivitas administratif, keamanan autentikasi, dan audit operasional gateway (tersanitasi)
           </p>
         </div>
-        <button className="wgy-btn wgy-btn-secondary wgy-btn-sm" onClick={fetchLogs} disabled={loading}>
-          <RefreshCw size={14} className={loading ? 'spin' : ''} /> Segarkan
-        </button>
+        <div className="wgy-page-header-actions">
+          <button className="wgy-btn wgy-btn-secondary wgy-btn-sm" onClick={fetchLogs} disabled={loading}>
+            <RefreshCw size={14} className={loading ? 'spin' : ''} /> Segarkan
+          </button>
+        </div>
       </div>
 
       <div style={{ display: 'flex', gap: 'var(--wgy-space-2)', marginBottom: 'var(--wgy-space-4)' }}>

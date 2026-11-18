@@ -169,7 +169,7 @@ export const BrandsPanel: React.FC<BrandsPanelProps> = ({ userRole = 'viewer' })
       transition={{ duration: 0.35, ease: 'easeOut' }}
     >
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.75rem' }}>
+      <div className="wgy-page-header">
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.02em', marginBottom: '0.25rem' }}>
             Brand &amp; Kredensial API
@@ -179,7 +179,7 @@ export const BrandsPanel: React.FC<BrandsPanelProps> = ({ userRole = 'viewer' })
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div className="wgy-page-header-actions">
           <button
             className="wgy-btn wgy-btn-secondary wgy-btn-sm"
             onClick={fetchBrands}

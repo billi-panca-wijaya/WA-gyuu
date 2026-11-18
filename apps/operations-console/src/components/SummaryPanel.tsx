@@ -28,13 +28,49 @@ export const SummaryPanel: React.FC = () => {
     fetchSummary();
   }, []);
 
+  const getActiveDbInfo = () => {
+    let dbType = data?.system?.database_driver;
+    if (!dbType && typeof window !== 'undefined') {
+      try {
+        const local = localStorage.getItem('wgy_gateway_settings');
+        if (local) {
+          const parsed = JSON.parse(local);
+          if (parsed.dbType) dbType = parsed.dbType;
+        }
+      } catch {}
+    }
+    dbType = dbType || 'sqlite';
+
+    if (dbType === 'mongodb') {
+      return {
+        name: 'MongoDB (NoSQL Document Store)',
+        meta: '(Port: 27017 / Atlas)',
+        note: 'Dokumen sesi & audit terdistribusi NoSQL',
+      };
+    }
+    if (dbType === 'postgres') {
+      return {
+        name: 'PostgreSQL (Enterprise Relational)',
+        meta: '(Port: 5432)',
+        note: 'Tabel relasional ACID terisolasi',
+      };
+    }
+    return {
+      name: 'SQLite Persisten',
+      meta: '(Volume: /app/data)',
+      note: 'Berkas database lokal Docker volume',
+    };
+  };
+
+  const activeDb = getActiveDbInfo();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.75rem' }}>
+      <div className="wgy-page-header">
         <div>
           <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#fff', letterSpacing: '-0.02em', marginBottom: '0.25rem' }}>
             Ringkasan Operasional
@@ -43,15 +79,17 @@ export const SummaryPanel: React.FC = () => {
             Pemantauan performa real-time, status infrastruktur gateway, dan integritas multi-brand
           </p>
         </div>
-        <button
-          className="wgy-btn wgy-btn-secondary wgy-btn-sm"
-          onClick={fetchSummary}
-          disabled={loading}
-          style={{ borderRadius: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-        >
-          <RefreshCw size={14} style={{ animation: loading ? 'spinLoader 1s linear infinite' : 'none' }} />
-          <span>Segarkan Data</span>
-        </button>
+        <div className="wgy-page-header-actions">
+          <button
+            className="wgy-btn wgy-btn-secondary wgy-btn-sm"
+            onClick={fetchSummary}
+            disabled={loading}
+            style={{ borderRadius: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+          >
+            <RefreshCw size={14} style={{ animation: loading ? 'spinLoader 1s linear infinite' : 'none' }} />
+            <span>Segarkan Data</span>
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -189,8 +227,8 @@ export const SummaryPanel: React.FC = () => {
                 <strong style={{ color: '#fff', fontSize: '0.95rem' }}>Database &amp; Penyimpanan Sesi</strong>
               </div>
               <div style={{ fontSize: '0.85rem', color: '#cbd5e1', lineHeight: 1.6 }}>
-                <div>Penyimpanan Aktif: <strong style={{ color: '#fff' }}>SQLite Persisten</strong> <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>(Volume: /app/data)</span></div>
-                <div>Dukungan Eksternal: <span style={{ color: '#94a3b8' }}>MongoDB / PostgreSQL / Redis</span></div>
+                <div>Penyimpanan Aktif: <strong style={{ color: '#fff' }}>{activeDb.name}</strong> <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{activeDb.meta}</span></div>
+                <div>Status Driver: <span style={{ color: '#86efac' }}>{activeDb.note}</span></div>
                 <div>Status Integritas: <strong style={{ color: '#4ade80' }}>Konsisten &amp; Terisolasi</strong></div>
               </div>
             </div>
