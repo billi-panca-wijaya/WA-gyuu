@@ -1,468 +1,373 @@
-> **Arsitektur Sistem & PRD:** Untuk arsitektur teknis mendalam, diagram sekuens lengkap, skema API lengkap, kriptografi verifier, dan siklus otentikasi, lihat [WA_LOGIN_SYSTEM.md](WA_LOGIN_SYSTEM.md) dan [QUEUED_LOGIN.md](docs/QUEUED_LOGIN.md).
+<p align="center">
+  <img src="apps/gateway/public/wagyuu-logo.jpg" alt="WAgyuu Logo" width="180" style="border-radius: 20px; box-shadow: 0 8px 24px rgba(34, 197, 94, 0.25);" />
+</p>
 
-# 🚀 Enterprise WhatsApp Gateway & Paket Laravel (Standar Spatie)
+# 🚀 WAgyuu — Central WhatsApp API Gateway & Multi-Brand OTP Ecosystem
 
 [English](README.md) | [Bahasa Indonesia](README.id.md)
 
-Sebuah ekosistem siap produksi: **WhatsApp API Gateway (Self-Hosted)** dan **Paket Laravel berstandar Spatie**. Tambahkan fitur **Login Pelanggan via WhatsApp OTP (4 digit)**, **Multi-Sender Device Pool (Rotasi Otomatis)**, serta **Back-Office Operasional** ke **aplikasi Laravel Anda** dengan konvensi Composer modern, auto-discovery paket, aset yang dapat di-publish, dan jaminan keamanan zero-overwrite.
+**Pembuat & Pengembang:** Billy Panca Wijaya  
+**Lisensi:** MIT  
+**Domain Produksi Live:** [`https://wa-api.billi-panca-wijaya.my.id`](https://wa-api.billi-panca-wijaya.my.id)  
+**Portal IT Operasional:** [`https://wa-api.billi-panca-wijaya.my.id/admin/login`](https://wa-api.billi-panca-wijaya.my.id/admin/login)
 
 ---
 
 ## 📑 Daftar Isi
-1. [Tujuan & Mengapa Menggunakan Ini](#-1-tujuan--mengapa-menggunakan-ini)
-2. [Jaminan Zero-Overwrite & Desain Spatie](#-2-jaminan-zero-overwrite--desain-spatie)
-3. [Arsitektur Sistem & Topologi Database](#-3-arsitektur-sistem--topologi-database)
-   - [WhatsApp Gateway Engine (OpenWA Docker)](#a-whatsapp-gateway-engine-openwa-docker)
-   - [Peran Database Backend (PostgreSQL, MySQL, MongoDB, Redis)](#b-peran-database-backend-postgresql-mysql-mongodb-redis)
-4. [Diagram Alur & Siklus Hidup Login Pelanggan](#-4-diagram-alur--siklus-hidup-login-pelanggan)
-5. [Struktur Direktori Proyek](#-5-struktur-direktori-proyek)
-6. [Panduan Instalasi Langkah demi Langkah](#-6-panduan-instalasi-langkah-demi-langkah)
-   - [Langkah 1: Jalankan Gateway Engine](#langkah-1-jalankan-whatsapp-gateway-engine)
-   - [Langkah 2: Instal Paket via Composer](#langkah-2-instal-paket-via-composer)
-   - [Langkah 3: Jalankan Installer Paket](#langkah-3-jalankan-installer-paket)
-   - [Langkah 4: Tambahkan Trait ke Model User](#langkah-4-tambahkan-trait-ke-model-user)
-   - [Langkah 5: Konfigurasi Database (SQL vs MongoDB)](#langkah-5-konfigurasi-database-sql-vs-mongodb)
-   - [Langkah 6: Konfigurasi Environment (.env)](#langkah-6-konfigurasi-environment-env)
-7. [Penggunaan Programatik & Facade API](#-7-penggunaan-programatik--facade-api)
-8. [Setup Pertahanan Bot Cloudflare Turnstile](#-8-setup-pertahanan-bot-cloudflare-turnstile)
-9. [Antrean Asinkron Redis & Supervisor](#-9-antrean-asinkron-redis--supervisor)
-10. [Portal Admin Back-Office (9 Menu)](#-10-portal-admin-back-office-9-menu)
-11. [Pairing Nomor Pengirim WhatsApp](#-11-pairing-nomor-pengirim-whatsapp)
-12. [Panduan Operasional & Deployment Produksi](#-12-panduan-operasional--deployment-produksi)
+1. [Ikhtisar Proyek & Arsitektur](#-1-ikhtisar-proyek--arsitektur)
+2. [Pemisahan Fungsional: Portal IT Pusat vs Backoffice Brand](#-2-pemisahan-fungsional-portal-it-pusat-vs-backoffice-brand)
+3. [Arsitektur Monorepo](#-3-arsitektur-monorepo)
+4. [Portal IT Pusat (Operations Console Pro Max)](#-4-portal-it-pusat-operations-console-pro-max)
+5. [Manajemen Terpadu Brand & Kredensial API](#-5-manajemen-terpadu-brand--kredensial-api)
+6. [Engine WhatsApp & Protokol OTP 4-Digit](#-6-engine-whatsapp--protokol-otp-4-digit)
+7. [Dukungan Multi-Driver Database (SQLite, MongoDB, PostgreSQL, MySQL)](#-7-dukungan-multi-driver-database)
+8. [Paket Klien Laravel (Standar Spatie & Zero-Overwrite)](#-8-paket-klien-laravel-standar-spatie)
+9. [Struktur Direktori Proyek](#-9-struktur-direktori-proyek)
+10. [Panduan Instalasi & Menjalankan Lokal](#-10-panduan-instalasi--menjalankan-lokal)
+11. [Deployment Docker & Reverse Proxy aaPanel di VPS](#-11-deployment-docker--reverse-proxy-aapanel-di-vps)
+12. [Pengujian Otomatis (Test Suite)](#-12-pengujian-otomatis-test-suite)
+13. [Keamanan & Matriks Hak Akses (RBAC)](#-13-keamanan--matriks-hak-akses-rbac)
 
 ---
 
-## 🎯 1. Tujuan & Mengapa Menggunakan Ini
+## 🎯 1. Ikhtisar Proyek & Arsitektur
 
-### Masalah yang Sering Dihadapi
-- **Biaya API Cloud Sangat Mahal**: Layanan seperti Twilio atau Meta Cloud API mengenakan biaya langganan bulanan dan biaya per pesan yang mahal.
-- **Add-on Copy-Paste yang Berantakan**: Menyalin file secara manual ke dalam folder `app/` mengotori codebase proyek Anda, rawan bentrok nama kelas, dan sulit di-update.
-- **Single Point of Failure**: Bergantung pada satu nomor WhatsApp pengirim berisiko mematikan sistem jika nomor tersebut diblokir atau terputus.
-- **Serangan Bot & OTP Pumping**: Endpoint publik login sering diserang spam bot otomatis yang menguras antrean dan membebani nomor pengirim.
-
-### Solusi yang Disediakan
-Repositori ini menyediakan dua komponen terpadu:
-1. **Self-Hosted WhatsApp Gateway Engine**: Berjalan via Docker (OpenWA) menggunakan engine Baileys yang stabil. **Bebas biaya per pesan**, mandiri di server sendiri, dan mendukung multi-sesi socket pada port `18091`.
-2. **Paket Laravel Berstandar Spatie (`billi-panca-wijaya/laravel-whatsapp-gateway`)**:
-   - **Composer Auto-Discovery**: Terinstal rapi via Composer; service provider dan facade terdaftar otomatis tanpa perlu konfigurasi manual.
-   - **Login Pelanggan WhatsApp OTP 4 Digit**: Passwordless, cepat, dan angka nol di awal tetap terjaga (`08xx` / `+628xx`).
-   - **Perlindungan Cloudflare Turnstile**: Menangkal serangan bot sebelum kode OTP dikeluarkan atau dikirim.
-   - **Antrean Asinkron Redis**: Memisahkan respon API dari latensi jaringan WhatsApp; respon frontend secepat kilat (<50ms).
-   - **Multi-Device Sender Pool**: Hubungkan beberapa nomor WhatsApp sekaligus. Sistem membagikan pengiriman dengan rotasi **Round-Robin** dan otomatis beralih ke nomor lain jika ada nomor yang terputus (auto-failover).
-   - **Aset Publishable**: Konfigurasi, migrasi, dan komponen antarmuka React dapat dipublikasikan dengan mudah via Artisan.
-
----
-
-## 🛡️ 2. Jaminan Zero-Overwrite & Desain Spatie
-
-**Aplikasi Laravel Anda yang sudah berjalan tidak akan tertimpa sama sekali.**  
-Mengikuti filosofi paket open-source Spatie (seperti `spatie/laravel-permission`), seluruh kode berada di bawah namespace vendor `BilliPancaWijaya\WhatsAppGateway\` dan terhubung menggunakan kontrak serta traits.
-
-| File / Folder Bawaan Laravel Anda | Implementasi Paket Kami | Risiko Tertimpa |
-| :--- | :--- | :---: |
-| `app/Models/User.php` | Trait `HasWhatsAppLogin` (`use HasWhatsAppLogin;`) | ❌ **TIDAK PERNAH** |
-| `config/` | Dipublikasikan sebagai `config/whatsapp-gateway.php` | ❌ **TIDAK PERNAH** |
-| `database/migrations/` | Migrasi defensif yang mengecek keberadaan kolom | ❌ **TIDAK PERNAH** |
-| `routes/api.php` | Didaftarkan otomatis oleh ServiceProvider dengan prefix fleksibel | ❌ **TIDAK PERNAH** |
-| `app/Http/Controllers/` | Controller ber-namespace mandiri di dalam `src/Http/Controllers/` | ❌ **TIDAK PERNAH** |
-
----
-
-## 🔄 3. Arsitektur Sistem & Topologi Database
-
-### A. WhatsApp Gateway Engine (OpenWA Docker)
-WhatsApp Gateway adalah microservice independen di dalam container (`wa-gateway-openwa`, Port `18091`). Engine ini **sepenuhnya database-agnostik**:
-- Menyimpan sesi socket internal di dalam Docker volume (`openwa-data`).
-- **Tidak terhubung langsung** ke database PostgreSQL, MySQL, atau MongoDB Anda.
-- Berkomunikasi secara eksklusif melalui **HTTP REST API** (backend mengirim instruksi kirim pesan) dan **Webhooks** (gateway mengirim update status pesan masuk/terkirim).
+**WAgyuu** adalah ekosistem WhatsApp API Gateway dan layanan verifikasi nomor telepon terpusat yang dirancang untuk skala multi-brand enterprise. Sistem ini dibangun untuk memecahkan beban operasional pengiriman kode OTP WhatsApp massal, menghilangkan ketergantungan pada API cloud berbayar mahal per pesan, dan memberikan pemisahan wewenang yang tegas antara **Tim IT Operasional Pusat** dan **Aplikasi Web Brand**.
 
 ```text
-┌────────────────────────────────────────────────────────────────────────┐
-│                        BACKEND LARAVEL ANDA                            │
-│                                                                        │
-│   ┌──────────────┐       ┌──────────────┐       ┌──────────────────┐   │
-│   │  PostgreSQL  │       │    Redis     │       │     MongoDB      │   │
-│   │   / MySQL    │  ATAU │   (Antrean   │  ATAU │  (Dokumen User   │   │
-│   │ (Relasional) │       │   & Cache)   │       │   & Log Chat)    │   │
-│   └──────▲───────┘       └──────▲───────┘       └────────▲─────────┘   │
-│          │                      │                        │             │
-│          └──────────────────────┼────────────────────────┘             │
-│                                 │                                      │
-│                        Logika Aplikasi Laravel                         │
-│               (WhatsAppGateway Facade / Controllers)                   │
-└─────────────────────────────────┬──────────────────────────────────────┘
-                                  │
-                  1. Kirim Pesan (HTTP POST JSON)
-                  2. Webhook Event (HTTP POST JSON)
-                                  │
-                                  ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│             WhatsApp Gateway Container (wa-gateway-openwa)             │
-│                       Port 18091 (Internal/LAN)                        │
-└─────────────────────────────────┬──────────────────────────────────────┘
-                                  │
-                         WebSocket (Baileys)
-                                  │
-                                  ▼
-                     ┌─────────────────────────┐
-                     │ Jaringan WhatsApp Dunia │
-                     └─────────────────────────┘
-```
-
-### B. Peran Database Backend (PostgreSQL, MySQL, MongoDB, Redis)
-
-| Database | Didukung? | Rekomendasi Peran dalam Sistem |
-| :--- | :---: | :--- |
-| **PostgreSQL / MySQL** | ✅ Native | **Database Utama**: Menyimpan akun pengguna, kolom verifikasi nomor, hash verifier OTP, dan daftar pool nomor pengirim. |
-| **MongoDB** | ✅ Didukung | **Dokumen NoSQL**: Didukung melalui `mongodb/laravel-mongodb`. Menyimpan data pengguna dan OTP sebagai dokumen BSON. Cukup atur `user_model` di `config/whatsapp-gateway.php`. |
-| **Redis** | ✅ Wajib di Produksi | **Antrean Asinkron & Cache**: Bertindak sebagai broker memori cepat untuk antrean `whatsapp-otp`, lock atomik (`Cache::lock`), dan penghitung batas rate limit. Redis tidak menggantikan database utama Anda. |
-
----
-
-## 📊 4. Diagram Alur & Siklus Hidup Login Pelanggan
-
-```mermaid
-flowchart TD
-    Start([📱 Pengunjung Memasukkan Nomor HP]) --> Bot[Pengunjung klik Minta OTP & menyelesaikan Turnstile]
-    Bot --> Step1[Frontend mengirim nomor dan token challenge]
-    Step1 --> Step2[Backend validasi token, nomor & batas; enqueues ID challenge]
-    Step2 --> Step3[Worker membuat 4 digit OTP & menyimpan hash HMAC]
-    Step3 --> Step4[Pilih nomor aktif dari SenderPool & kirim via Gateway]
-    Step4 --> Step5[Pengunjung menerima pesan WhatsApp berisi 4 angka]
-    Step5 --> Step6[Pengunjung memasukkan 4 angka di form website]
-    Step6 --> Step7{Backend validasi kode secara atomik & aman}
-    
-    Step7 -- Kode Salah / Kadaluarsa --> Error[Tampilkan Error & Hitung Mundur Resend]
-    Error --> Step5
-    
-    Step7 -- Kode Benar & Dikonsumsi --> CheckUser{Apakah nomor sudah ada di database?}
-    CheckUser -- User Lama --> AuthSuccess([🎉 Login Berhasil & Redirect ke Dashboard])
-    CheckUser -- User Baru --> Onboard[Lengkapi Nama / Profil Singkat]
-    Onboard --> AuthSuccess
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           APLIKASI WEB BRAND (LARAVEL)                          │
+│                                                                                 │
+│   ┌───────────────────────────┐                ┌────────────────────────────┐   │
+│   │ Brand A (e.g. Portal Web) │                │ Brand B (e.g. Mobile Apps) │   │
+│   │ Laravel Client Package    │                │ Laravel Client Package     │   │
+│   │ Backoffice: WhatsApp Menu │                │ Backoffice: WhatsApp Menu  │   │
+│   └─────────────┬─────────────┘                └─────────────┬──────────────┘   │
+└─────────────────┼────────────────────────────────────────────┼──────────────────┘
+                  │ API Key (Header: x-api-key)                │
+                  │ Raw Secret Token (HMAC-SHA256)             │
+                  ▼                                            ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│               WAGYUU CENTRAL GATEWAY (NestJS 11 + Baileys Engine)               │
+│                                                                                 │
+│   Domain Publik: https://wa-api.billi-panca-wijaya.my.id                        │
+│   Internal Port: 18091 (Docker Container: wa-gateway-openwa)                    │
+│                                                                                 │
+│   ┌────────────────────────────────┐     ┌──────────────────────────────────┐   │
+│   │    Modul Publik & Brand API    │     │       Portal IT Pusat Operasi    │   │
+│   │    - POST /v1/otp/challenge    │     │       - Path: /admin/login       │   │
+│   │    - POST /v1/otp/verify       │     │       - Route: /v1/ops/*         │   │
+│   │    - POST /v1/messages/send    │     │       - HttpOnly Cookie Session  │   │
+│   │    - GET  /v1/capabilities     │     │       - UI/UX Pro Max (ReactBits)│   │
+│   └─────────────┬──────────────────┘     └─────────────────┬────────────────┘   │
+│                 │                                          │                    │
+│                 ▼                                          ▼                    │
+│   ┌─────────────────────────────────────────────────────────────────────────┐   │
+│   │              TypeORM Data Layer (Multi-Driver Ready)                    │   │
+│   │   - SQLite (Default Standalone Volume Host: /app/data/wagyuu.sqlite)    │   │
+│   │   - MongoDB / PostgreSQL / MySQL (Opsi Terkonfigurasi via Settings)     │   │
+│   └─────────────────────────────────────┬───────────────────────────────────┘   │
+└─────────────────────────────────────────┼───────────────────────────────────────┘
+                                          │ Direct WebSocket
+                                          ▼
+                             ┌─────────────────────────┐
+                             │ Jaringan WhatsApp Dunia │
+                             └─────────────────────────┘
 ```
 
 ---
 
-## 📁 5. Struktur Direktori Proyek
+## 🏢 2. Pemisahan Fungsional: Portal IT Pusat vs Backoffice Brand
 
-```text
-wa-gateway/
-├── composer.json                       # Definisi Paket Composer & Autoloading PSR-4
-├── phpunit.xml.dist                    # Konfigurasi Pengujian PHPUnit
-├── docker-compose.yml                  # Container WhatsApp Gateway Engine (OpenWA)
-├── .env.example                        # Contoh Variabel Lingkungan Lengkap
-├── LICENSE                             # Lisensi MIT
-├── README.md / README.id.md            # Dokumentasi Bilingual (Inggris & Indonesia)
-├── WA_LOGIN_SYSTEM.md                  # Spesifikasi Teknis & PRD Lengkap
-│
-├── config/
-│   └── whatsapp-gateway.php            # Konfigurasi Publishable (`whatsapp-gateway-config`)
-│
-├── database/
-│   └── migrations/                     # Migrasi Defensif Publishable
-│       ├── 0001_create_whatsapp_user_columns.php
-│       ├── 0002_create_whatsapp_otp_tables.php
-│       └── 0003_create_whatsapp_sender_pools_table.php
-│
-├── routes/
-│   └── api.php                         # Rute API, Admin Back-Office, dan Webhook
-│
-├── resources/
-│   └── frontend/                       # Komponen UI React & SPA Back-Office
-│
-├── deploy/
-│   ├── gateway-reverse-proxy.conf      # Konfigurasi Nginx reverse proxy
-│   └── whatsapp-otp-worker.conf        # Template worker Supervisor
-│
-├── src/                                # Source Code PSR-4 (`BilliPancaWijaya\WhatsAppGateway\`)
-│   ├── WhatsAppGateway.php             # Service Manager & Akses Facade
-│   ├── WhatsAppGatewayServiceProvider.php # Service Provider Auto-Discovered
-│   ├── Facades/
-│   │   └── WhatsAppGateway.php         # Facade untuk Developer
-│   ├── Commands/
-│   │   ├── InstallWhatsAppGatewayCommand.php # `php artisan whatsapp-gateway:install`
-│   │   ├── CheckGatewayStatusCommand.php     # `php artisan whatsapp-gateway:status`
-│   │   └── PruneOtpChallengesCommand.php     # `php artisan whatsapp-gateway:prune`
-│   ├── Exceptions/
-│   │   └── OtpException.php            # Exception Domain dengan Render HTTP
-│   ├── Http/Controllers/
-│   │   ├── WhatsAppOtpController.php
-│   │   ├── Admin/WhatsAppGatewayController.php
-│   │   ├── Admin/WhatsAppSenderPoolController.php
-│   │   ├── Admin/WhatsAppVerifiedMembersController.php
-│   │   └── BackOffice/WhatsAppMemberWebhookController.php
-│   ├── Jobs/
-│   │   └── WhatsAppSendOtp.php         # Job Asinkron Antrean OTP
-│   ├── Models/
-│   │   ├── WhatsAppOtpChallenge.php
-│   │   ├── WhatsAppOtpDelivery.php
-│   │   └── WhatsAppSenderPool.php
-│   ├── Services/
-│   │   ├── OtpService.php              # Logika Utama Permintaan & Verifikasi OTP
-│   │   ├── SenderPoolService.php       # Rotasi Multi-Nomor & Failover Otomatis
-│   │   ├── OpenWaSessionClient.php     # Klien HTTP REST OpenWA
-│   │   ├── PhoneNumber.php             # Normalisasi E.164 & Masking Nomor
-│   │   ├── TenantResolver.php          # Resolusi Multi-Tenant
-│   │   ├── WhatsAppBotChallenge.php    # Validasi Cloudflare Turnstile
-│   │   └── Transport/                  # Driver Transport (Pooled, OpenWA, Mock)
-│   └── Traits/
-│       └── HasWhatsAppLogin.php        # Trait untuk Model User Eloquent
-│
-└── tests/                              # Pengujian Unit & Feature
-    ├── TestCase.php                    # Base Test Orchestra Testbench
-    └── Feature/WhatsAppOtpTest.php
-```
+Sistem menerapkan prinsip pemisahan wewenang yang tegas:
+
+1. **Portal IT Pusat (`/admin/login`, `/v1/ops/*`):**
+   - Dikelola khusus oleh Tim IT Operasional Pusat.
+   - Berfungsi untuk: pendaftaran brand, penerbitan & rotasi kredensial API, pemantauan kesehatan runtime & memori gateway, konfigurasi parameter infrastruktur, dan inspeksi audit log.
+   - **Bebas Data Pelanggan:** Tidak menyimpan data member pelanggan dan tidak melayani pairing nomor WhatsApp operasional brand.
+
+2. **Backoffice Web Brand (Aplikasi Laravel Masing-Masing):**
+   - Dikelola oleh masing-masing pengelola brand.
+   - Seluruh data akun member, riwayat verifikasi nomor, dan menu pairing nomor WhatsApp pengirim (Sender Device Pool via QR code atau kode 8 karakter) dioperasikan langsung dari backoffice brand.
 
 ---
 
-## 🛠️ 6. Panduan Instalasi Langkah demi Langkah
+## 📦 3. Arsitektur Monorepo
 
-### Langkah 1: Jalankan WhatsApp Gateway Engine
-Dari direktori root repositori ini:
-```bash
-docker compose up -d
-```
-Pastikan container gateway aktif pada port `18091`:
-```bash
-curl http://127.0.0.1:18091/api/health/ready
-# Output: {"status":"ok", ...}
-```
+Repositori ini tersusun dalam struktur monorepo terpadu:
 
-### Langkah 2: Instal Paket via Composer
-Di dalam proyek Laravel Anda, tambahkan repositori ke file `composer.json`:
-```json
-"repositories": [
-    {
-        "type": "vcs",
-        "url": "https://github.com/billi-panca-wijaya/wa-gateway.git"
-    }
-]
-```
-Kemudian jalankan instalasi:
-```bash
-composer require billi-panca-wijaya/laravel-whatsapp-gateway:dev-main
-```
-*(Jika ingin menggunakan path lokal dalam pengembangan, gunakan `"type": "path", "url": "../wa-gateway"`).*
-
-Sistem Package Auto-Discovery Laravel akan langsung mendaftarkan `WhatsAppGatewayServiceProvider` dan Facade `WhatsAppGateway`.
-
-### Langkah 3: Jalankan Installer Paket
-Jalankan perintah instalasi interaktif dari Artisan:
-```bash
-php artisan whatsapp-gateway:install
-```
-Perintah ini akan mempublikasikan file konfigurasi `config/whatsapp-gateway.php`, menyalin file migrasi, dan menawarkan opsi untuk langsung menjalankan migrasi database.
-
-*Atau publikasikan tag secara manual:*
-```bash
-php artisan vendor:publish --tag="whatsapp-gateway-config"
-php artisan vendor:publish --tag="whatsapp-gateway-migrations"
-php artisan vendor:publish --tag="whatsapp-gateway-frontend"
-```
-
-### Langkah 4: Tambahkan Trait ke Model User
-Buka model User Anda (misalnya `app/Models/User.php`) dan tambahkan trait `HasWhatsAppLogin`:
-
-```php
-namespace App\Models;
-
-use BilliPancaWijaya\WhatsAppGateway\Traits\HasWhatsAppLogin;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-
-class User extends Authenticatable
-{
-    use HasWhatsAppLogin;
-
-    // ... seluruh properti dan fungsi lama Anda tetap aman
-}
-```
-
-### Langkah 5: Konfigurasi Database (SQL vs MongoDB)
-
-#### Opsi 5A: PostgreSQL / MySQL
-Jalankan migrasi bawaan paket:
-```bash
-php artisan migrate
-```
-Ini akan mengeksekusi:
-1. `0001_create_whatsapp_user_columns.php` (menambah `tenant_key`, `phone_e164`, `phone_verified_at`, dll.)
-2. `0002_create_whatsapp_otp_tables.php` (membuat tabel `otp_challenges` dan `otp_deliveries`)
-3. `0003_create_whatsapp_sender_pools_table.php` (membuat tabel `sender_pool`)
-
-#### Opsi 5B: MongoDB
-Jika aplikasi Laravel Anda menggunakan MongoDB (`mongodb/laravel-mongodb`):
-1. Di file `config/whatsapp-gateway.php`, sesuaikan opsi `user_model` agar mengarah ke model Mongo User Anda.
-2. Pasang trait `HasWhatsAppLogin` di model Mongo User tersebut.
-3. Buat indeks unik untuk `phone_e164` di koleksi `users`.
-
-### Langkah 6: Konfigurasi Environment (`.env`)
-Tambahkan variabel berikut ke file `.env` Laravel Anda:
-```dotenv
-# WhatsApp Gateway Engine (Container OpenWA)
-OPENWA_BASE_URL=http://127.0.0.1:18091
-OPENWA_SESSION_ID=default
-OPENWA_API_KEY=
-
-# Rahasia HMAC & Pepper OTP (Wajib diisi pada server produksi)
-WA_OTP_HMAC_SECRET=buat-string-rahasia-acak-sepanjang-64-karakter-di-sini
-WA_OTP_TRANSPORT=openwa
-WA_OTP_DEFAULT_REGION=ID
-
-# Pertahanan Bot Cloudflare Turnstile
-WA_OTP_TURNSTILE_ENABLED=true
-WA_OTP_TURNSTILE_SITE_KEY=<site-key-turnstile-anda>
-WA_OTP_TURNSTILE_SECRET_KEY=<secret-key-turnstile-anda>
-WA_OTP_TURNSTILE_HOSTNAMES=domain-anda.com,login.domain-anda.com,localhost,127.0.0.1
-
-# Antrean Asinkron Redis untuk OTP
-QUEUE_CONNECTION=redis
-CACHE_STORE=redis
-WA_OTP_QUEUE_ENABLED=true
-WA_OTP_QUEUE_CONNECTION=redis
-WA_OTP_QUEUE_NAME=whatsapp-otp
-REDIS_QUEUE_RETRY_AFTER=90
-
-# Batas Rate Limit (Jendela 900 detik)
-WA_OTP_SEND_PER_PHONE=5
-WA_OTP_SEND_PER_IP=20
-WA_OTP_SEND_SYSTEM=2000
-WA_OTP_SEND_GLOBAL=500
-WA_OTP_SEND_WINDOW_SECONDS=900
-WA_OTP_VERIFY_PER_IP=60
-WA_OTP_VERIFY_WINDOW_SECONDS=900
-WA_OTP_MAX_ATTEMPTS=5
-```
+- **`apps/gateway`**: Service backend mandiri berbasis **NestJS 11** dan **Node.js 22**. Menyediakan REST API gateway, engine Baileys WebSocket v7, verifikasi HMAC, audit log, RBAC guard, dan TypeORM storage layer.
+- **`apps/operations-console`**: Antarmuka web modern Single-Page Application (SPA) berbasis **React 19**, **Vite 6**, **framer-motion**, dan pustaka animasi **reactbits.dev**. Mengkompilasi aset langsung ke `apps/gateway/public/admin/`.
+- **`packages/contracts`**: Paket pustaka definisi tipe TypeScript bersama, antarmuka DTO, dan skema kontrak API.
+- **`src/` & Root**: Paket klien Laravel (`billi-panca-wijaya/laravel-whatsapp-gateway`) berstandar Spatie dengan fitur zero-overwrite.
 
 ---
 
-## 💻 7. Penggunaan Programatik & Facade API
+## ✨ 4. Portal IT Pusat (Operations Console Pro Max)
 
-Anda dapat menggunakan fungsi paket ini langsung di controller, service, atau job Laravel Anda:
+Portal IT dapat diakses pada URL [`https://wa-api.billi-panca-wijaya.my.id/admin/login`](https://wa-api.billi-panca-wijaya.my.id/admin/login).
 
+### Keunggulan Desain UI/UX:
+- **Pola Animasi ReactBits.dev:**
+  - `SpotlightCard`: Kartu interaktif dengan efek *radial tracking glow* yang bergerak dinamis mengikuti posisi kursor mouse.
+  - `ShinyText`: Efek teks berkilau animasi gradien (*shimmering highlight*).
+- **Glassmorphism Navy Pro:** Warna latar `#070d18` / `#0b1220` berpadu dengan border transparan beraksen hijau WAgyuu `#22c55e`.
+- **Radar Pulse Logo:** Aset resmi logo WAgyuu dihiasi ring radar berdenyut yang menunjukkan status sistem aktif.
+- **Transisi Instan Tanpa Refresh:** Sesi login masuk dan keluar langsung mengubah tampilan dashboard secara reaktif tanpa perlu me-refresh halaman web secara manual.
+
+### 7 Menu Navigasi Terfokus:
+- **OPERASIONAL:**
+  1. `Ringkasan`: Indikator memori gateway (<50MB RAM), status Baileys WebSocket v7, total brand aktif, dan kapabilitas infrastruktur.
+  2. `Brand & Kredensial API`: Manajemen brand terpadu beserta penerbitan API key otomatis.
+  3. `Webhook`: Pemantauan status pengiriman event webhook dan panduan keamanan SSRF.
+- **PEMANTAUAN:**
+  4. `Log & Audit`: Audit trail *append-only* dari setiap aktivitas staf IT dan panggilan API dengan sanitasi payload otomatis.
+  5. `Kesehatan Sistem`: Telemetri real-time penggunaan CPU, Heap Memory, RSS, dan status koneksi storage.
+- **ADMINISTRASI:**
+  6. `Pengguna IT & Akses`: Manajemen akun staf IT (Superadmin, Operator, Viewer) dengan proteksi anti-lockout superadmin terakhir.
+  7. `Pengaturan Infrastruktur`: Panel konfigurasi 5 tab (Database, WhatsApp Engine, Keamanan OTP, Sesi IT, Jaringan & Log).
+  8. `Dokumentasi API`: Panduan integrasi cURL dan referensi endpoint.
+
+---
+
+## 🔑 5. Manajemen Terpadu Brand & Kredensial API
+
+Untuk efisiensi kerja tim operasional, proses pendaftaran brand dan penerbitan API key digabungkan dalam satu langkah:
+
+1. **Tombol Tunggal:** Klik **`+ Tambah Brand & Buat API Key`**.
+2. **Penerbitan Kredensial Otomatis:** Sistem membuat data brand dan secara bersamaan menerbitkan API key aktif:
+   - **Key ID:** `key_<slug_brand>_<random>` (disimpan di database).
+   - **Raw Secret Token:** `wgy_live_<slug_brand>_<random>` (diberikan salt & di-hash dengan SHA-256).
+3. **One-Time Secret Reveal:** Rahasia token hanya ditampilkan **satu kali** saat pembuatan atau rotasi dengan tombol salin cepat (*copy-to-clipboard*).
+4. **Rotasi Kredensial Fleksibel:** Mendukung masa tenggang rotasi (*grace period*) default 15 menit agar brand tidak mengalami *downtime* saat memperbarui konfigurasi di server mereka.
+
+---
+
+## ⚡ 6. Engine WhatsApp & Protokol OTP 4-Digit
+
+### Engine WhatsApp (Baileys v7 WebSocket):
+- **Bebas Chromium:** Berjalan melalui protokol socket WebSocket native (`@whiskeysockets/baileys`).
+- **Efisiensi Ekstrem:** Mengonsumsi memori <50MB RAM (jauh lebih hemat dibandingkan headless browser yang membutuhkan 500MB–1GB RAM per sesi).
+- **Multi-Device Multi-Session:** Mendukung penautan multi-nomor pengirim secara independen.
+
+### Spesifikasi Protokol OTP 4-Digit:
+- **Format:** 4 digit numerik acak murni (`0000` s/d `9999`) dengan preservasi angka nol di awal.
+- **Masa Berlaku (TTL):** Default 300 detik (5 menit).
+- **Jeda Kirim Ulang (Cooldown):** 30 detik untuk menghindari *spamming*.
+- **Toleransi Kesalahan:** Maksimal 5 kali percobaan verifikasi kode salah sebelum sesi tantangan dikunci (*lockout*).
+- **Masking Nomor:** Masking format E.164 (contoh: `+6281****7890`) di seluruh log dan UI console.
+- **Kriptografi Verifier:** Hash HMAC-SHA256 dengan *timing-safe comparison* untuk menangkal serangan *timing attack*.
+
+---
+
+## 🗄️ 7. Dukungan Multi-Driver Database
+
+WAgyuu menggunakan TypeORM yang dirancang modular untuk mendukung berbagai kebutuhan arsitektur:
+
+| Driver Database | Status Saat Ini | Kebutuhan & Rekomendasi Penggunaan |
+|---|:---:|---|
+| **SQLite (Default)** | ✅ **Aktif di Produksi** | Sangat ideal untuk server standalone/single-container. Tersimpan persisten di `/app/data/wagyuu.sqlite` pada host volume tanpa overhead server terpisah. |
+| **MongoDB** | ⚙️ **Siap Dikonfigurasi** | Cocok untuk deployment berskala besar berbasis dokumen yang terintegrasi langsung dengan database cluster NoSQL. |
+| **PostgreSQL** | ⚙️ **Siap Dikonfigurasi** | Pilihan terbaik untuk klaster enterprise relasional dengan konkurensi data tingkat tinggi. |
+| **MySQL / MariaDB** | ⚙️ **Siap Dikonfigurasi** | Didukung penuh untuk infrastruktur enterprise SQL standar. |
+
+Pengaturan koneksi database, ukuran pool koneksi, dan kredensial dapat ditinjau dan dikelola melalui tab **Database Storage** di menu Pengaturan Portal IT.
+
+---
+
+## 🧩 8. Paket Klien Laravel (Standar Spatie)
+
+Paket klien di dalam repositori ini (`billi-panca-wijaya/laravel-whatsapp-gateway`) dibangun mengikuti standar paket open-source Spatie:
+
+### Jaminan Zero-Overwrite:
+Kode aplikasi Laravel Anda tidak akan pernah tertimpa. Integrasi dilakukan melalui traits dan service provider:
+- **Model User:** Cukup tambahkan `use HasWhatsAppLogin;` di `app/Models/User.php`.
+- **Package Auto-Discovery:** `WhatsAppGatewayServiceProvider` dan Facade `WhatsAppGateway` terdaftar otomatis oleh Composer.
+- **Defensive Migrations:** File migrasi mengecek keberadaan kolom secara defensif sebelum menambahkan atribut `phone_e164`, `phone_verified_at`, dll.
+
+### Contoh Pemanggilan via Facade:
 ```php
 use BilliPancaWijaya\WhatsAppGateway\Facades\WhatsAppGateway;
 
-// 1. Mengirim permintaan kode OTP ke nomor pengguna
+// 1. Meminta tantangan kode OTP ke nomor pengguna
 $challenge = WhatsAppGateway::requestOtp('+6281234567890');
-// Menghasilkan: ['challenge_id' => '...', 'state' => 'queued', 'masked_phone' => '+6281****7890', ...]
+// Mengembalikan: ['challenge_id' => '...', 'state' => 'queued', 'masked_phone' => '+6281****7890']
 
-// 2. Memverifikasi kode OTP yang diinput oleh pengguna
+// 2. Memverifikasi kode OTP yang diinput pengguna
 $result = WhatsAppGateway::verifyOtp($challenge['challenge_id'], '1234');
-// Menghasilkan: ['user' => $userInstance, 'created' => true/false]
+// Mengembalikan: ['user' => $userInstance, 'created' => true/false]
 
-// 3. Mengirim ulang kode OTP
-$resend = WhatsAppGateway::resendOtp($challenge['challenge_id']);
-
-// 4. Mengirim pesan teks kustom melalui nomor pengirim aktif di pool
-$delivery = WhatsAppGateway::sendMessage('+6281234567890', 'Halo dari aplikasi Laravel saya!');
+// 3. Mengirim pesan teks kustom melalui nomor pengirim aktif
+WhatsAppGateway::sendMessage('+6281234567890', 'Halo, pesanan Anda telah dikonfirmasi!');
 ```
 
 ---
 
-## 🛡️ 8. Setup Pertahanan Bot Cloudflare Turnstile
+## 📁 9. Struktur Direktori Proyek
 
-Cloudflare Turnstile menghentikan bot spam dan serangan OTP pumping tanpa menyulitkan pengguna asli dengan teka-teki gambar yang membosankan.
-
-### Langkah Setup:
-1. Buka [Cloudflare Dashboard](https://dash.cloudflare.com) → **Turnstile**.
-2. Klik **Add widget**:
-   - **Widget Name**: misal `Login WhatsApp OTP`
-   - **Widget Mode**: **Managed** (Direkomendasikan)
-3. **Konfigurasi Domain**: Masukkan domain produksi Anda (misal `domain-anda.com`), serta `localhost` dan `127.0.0.1` untuk pengujian lokal.
-4. **Salin Kunci**:
-   - Salin **Site Key** ke `WA_OTP_TURNSTILE_SITE_KEY`.
-   - Salin **Secret Key** ke `WA_OTP_TURNSTILE_SECRET_KEY`.
-5. **Bersihkan Cache Konfigurasi**:
-   ```bash
-   php artisan config:clear
-   php artisan config:cache
-   ```
+```text
+wa-gateway/
+├── apps/
+│   ├── gateway/                        # Backend NestJS 11 Gateway
+│   │   ├── Dockerfile                  # Production Docker Image (Node 22 Bookworm Slim)
+│   │   ├── package.json                # Dependencies Gateway (NestJS, Baileys, TypeORM)
+│   │   ├── public/                     # Aset Publik (wagyuu-logo.jpg, admin/ build)
+│   │   └── src/
+│   │       ├── main.ts                 # Bootstrap server (Port 18091)
+│   │       ├── app.controller.ts       # Root / redirect & SPA handler
+│   │       └── modules/
+│   │           ├── admin-ops/          # Modul Portal IT Pusat (Brands, Keys, Health, Logs)
+│   │           ├── authentication/     # Guard API Key Brand (x-api-key HMAC)
+│   │           ├── otp/                # Engine Tantangan & Verifikasi OTP 4-Digit
+│   │           ├── platform-auth/      # Autentikasi Staf IT, Sesi Cookie & Audit Trail
+│   │           └── whatsapp-sessions/  # Adapter Baileys Multi-Device
+│   │
+│   └── operations-console/             # Frontend Portal IT (React 19 + Vite 6 + Framer Motion)
+│       ├── package.json                # Dependencies Console UI
+│       ├── vite.config.ts              # Konfigurasi build ke apps/gateway/public/admin/
+│       └── src/
+│           ├── components/
+│           │   ├── BrandsPanel.tsx     # Panel Terpadu Brand & Kredensial API
+│           │   ├── SettingsPanel.tsx   # Panel Pengaturan 5 Tab (OpenWA style)
+│           │   ├── SummaryPanel.tsx    # Dashboard Metrik & Infrastruktur
+│           │   ├── WebhookPanel.tsx    # Panel Webhook Bersih
+│           │   └── ui/                 # Komponen ReactBits (SpotlightCard, ShinyText)
+│           └── styles/portal.css       # Token Desain Dark Navy & Animasi
+│
+├── packages/
+│   └── contracts/                      # Kontrak Data & TypeScript Interfaces Bersama
+│
+├── deploy/
+│   ├── compose.yaml                    # Docker Compose Produksi (wa-gateway-openwa)
+│   └── aapanel/                        # Template Konfigurasi Nginx Reverse Proxy
+│
+├── src/                                # Source Code Paket Laravel (Standar Spatie)
+│   ├── WhatsAppGateway.php             # Service Manager Utama
+│   ├── WhatsAppGatewayServiceProvider.php
+│   ├── Facades/WhatsAppGateway.php     # Laravel Facade
+│   ├── Traits/HasWhatsAppLogin.php     # Trait Model User
+│   └── Http/Controllers/              # Controller OTP & Backoffice Brand
+│
+├── database/migrations/                # Migrasi Laravel Defensif
+├── config/whatsapp-gateway.php         # Konfigurasi Paket Laravel
+├── composer.json                       # Composer Manifest Paket Laravel
+├── README.md                           # Dokumentasi Bahasa Inggris
+└── README.id.md                        # Dokumentasi Bahasa Indonesia
+```
 
 ---
 
-## ⚡ 9. Antrean Asinkron Redis & Supervisor
+## 🛠️ 10. Panduan Instalasi & Menjalankan Lokal
 
-Di lingkungan produksi, pengiriman pesan OTP diproses di background melalui antrean Redis agar waktu respon HTTP ke pengunjung selalu di bawah 50ms.
+### Prasyarat:
+- Node.js versi 22+ & npm
+- PHP 8.2+ & Composer (untuk pengujian paket Laravel)
 
-### Konfigurasi Supervisor
-Buat file `/etc/supervisor/conf.d/whatsapp-otp-worker.conf` (template ada di `deploy/whatsapp-otp-worker.conf`):
-```ini
-[program:whatsapp-otp-worker]
-process_name=%(program_name)s_%(process_num)02d
-command=php /var/www/html/artisan queue:work redis --queue=whatsapp-otp --sleep=1 --tries=20 --timeout=60 --max-time=3600
-autostart=true
-autorestart=true
-user=www-data
-numprocs=2
-redirect_stderr=true
-stdout_logfile=/var/log/supervisor/whatsapp-otp.log
-stopwaitsecs=90
-```
-
-Nyalakan worker:
+### Menjalankan Gateway & Console Lokal:
 ```bash
-supervisorctl reread
-supervisorctl update
-supervisorctl start whatsapp-otp-worker:*
+# 1. Masuk ke backend gateway & install dependensi
+cd apps/gateway
+npm install
+
+# 2. Build backend
+npm run build
+
+# 3. Masuk ke frontend console & build UI
+cd ../operations-console
+npm install
+npm run build
+
+# 4. Jalankan gateway backend secara lokal
+cd ../gateway
+npm run start:dev
+```
+Akses portal IT lokal pada browser di: `http://localhost:18091/admin/login`
+
+---
+
+## 🚢 11. Deployment Docker & Reverse Proxy aaPanel di VPS
+
+### Spesifikasi Server Produksi:
+- **Host VPS:** `84.247.148.115`
+- **Container Name:** `wa-gateway-openwa`
+- **Image Docker:** `wagyuu-gateway:1.0.0` (dan tag `latest`)
+- **Port:** `127.0.0.1:18091:18091`
+- **Volume Data:** `/www/wwwroot/wa-api.billi-panca-wijaya.my.id/data:/app/data`
+
+### Konfigurasi Reverse Proxy Nginx aaPanel:
+Pada domain `wa-api.billi-panca-wijaya.my.id` di panel Nginx:
+```nginx
+location / {
+    proxy_pass http://127.0.0.1:18091;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_connect_timeout 60s;
+    proxy_read_timeout 60s;
+}
 ```
 
----
-
-## 🖥️ 10. Portal Admin Back-Office (9 Menu)
-
-Frontend yang dipublikasikan (`resources/frontend/`) mencakup komponen siap pakai untuk tim operasional:
-
-1. **WhatsApp Sessions & Senders** (Panel Native: Pairing QR & rotasi multi-device)
-2. **Verified Members** (Panel Native: Tabel anggota yang terverifikasi via WhatsApp)
-3. **Dashboard** (Konsol Embedded Gateway: Status socket, penggunaan memori, ringkasan)
-4. **Chats** (Konsol Embedded Gateway: Riwayat chat langsung & pembaca pesan)
-5. **Webhooks** (Konsol Embedded Gateway: Manajemen langganan webhook keluar)
-6. **Templates** (Konsol Embedded Gateway: Editor template pesan)
-7. **Message Tester** (Konsol Embedded Gateway: Kotak pasir interaktif uji coba pesan)
-8. **Plugins** (Konsol Embedded Gateway: Pengelola plugin gateway)
-9. **Logs** (Konsol Embedded Gateway: Log operasional engine WhatsApp)
-
----
-
-## 📱 11. Pairing Nomor Pengirim WhatsApp
-
-Hubungkan nomor pengirim baru melalui menu **WhatsApp Sessions & Senders**:
-1. **Pairing dengan Scan QR Code**: Klik "Link / Start Session", buka aplikasi WhatsApp di ponsel → Perangkat Tertaut → Pindai QR code pada layar.
-2. **Pairing dengan Kode 8 Karakter (Tanpa Kamera)**: Masukkan nomor pengirim → Klik "Minta Kode Pairing 8 Karakter" → Masukkan kode yang muncul ke notifikasi WhatsApp di ponsel Anda.
-
-Setelah terhubung, status akan berubah menjadi **`WORKING`** atau **`READY`**, dan pengiriman kode OTP akan otomatis berputar melalui nomor tersebut!
-
----
-
-## 🌐 12. Panduan Operasional & Deployment Produksi
-
-### Perintah Artisan Bermanfaat:
+### Mengelola Container di VPS:
 ```bash
-# Mengecek konektivitas ke engine WhatsApp Gateway:
-php artisan whatsapp-gateway:status
+# Mengecek status container
+docker ps --filter "name=wa-gateway-openwa"
 
-# Membersihkan data challenge OTP kadaluarsa lebih dari 30 hari:
-php artisan whatsapp-gateway:prune
-
-# Memperbarui file konfigurasi jika ada perubahan upstream:
-php artisan vendor:publish --tag="whatsapp-gateway-config" --force
-```
-
-### Mengelola Container WhatsApp Gateway:
-```bash
-# Menjalankan Gateway di latar belakang:
-docker compose up -d
-
-# Mengecek Kesehatan Gateway (Port 18091):
-curl -fsS http://127.0.0.1:18091/api/health/ready && echo ""
-
-# Memantau Log Container Gateway:
+# Memeriksa log aktivitas gateway
 docker logs -f --tail 100 wa-gateway-openwa
 
-# Me-restart Gateway:
-docker compose restart
+# Memeriksa kesehatan liveness API
+curl -fsS http://127.0.0.1:18091/v1/health/liveness
 ```
 
 ---
 
-*Dikembangkan untuk integrasi enterprise Laravel yang bersih, modular, dan mengikuti standar open-source Spatie.*
+## 🧪 12. Pengujian Otomatis (Test Suite)
+
+Seluruh pengujian unit dan kontrak gateway dapat dijalankan dengan:
+```bash
+cd apps/gateway
+npm test
+```
+
+Hasil verifikasi:
+```text
+PASS src/modules/otp/otp.contract.spec.ts
+PASS src/modules/admin-ops/admin-ops.service.spec.ts
+PASS src/modules/whatsapp-sessions/whatsapp-sessions.service.spec.ts
+PASS src/modules/otp/otp.service.spec.ts
+PASS src/modules/platform-auth/platform-auth.service.spec.ts
+
+Test Suites: 5 passed, 5 total
+Tests:       21 passed, 21 total
+```
+
+---
+
+## 🛡️ 13. Keamanan & Matriks Hak Akses (RBAC)
+
+Portal IT menerapkan pembagian hak akses bertingkat:
+
+| Fitur / Aksi Operasional | Superadmin | Operator | Viewer |
+|---|:---:|:---:|:---:|
+| **Melihat Ringkasan Sistem & Infrastruktur** | ✅ Ya | ✅ Ya | ✅ Ya |
+| **Melihat Daftar Brand & Metadata** | ✅ Ya | ✅ Ya | ✅ Ya |
+| **Tambah Brand & Buat API Key Baru\*** | ✅ Ya | ❌ Tidak | ❌ Tidak |
+| **Rotasi Kredensial API (Grace Period)\*** | ✅ Ya | ❌ Tidak | ❌ Tidak |
+| **Pencabutan Kredensial API (Revoke)\*** | ✅ Ya | ❌ Tidak | ❌ Tidak |
+| **Jeda / Aktifkan Kembali Brand (Pause/Resume)\*** | ✅ Ya | ❌ Tidak | ❌ Tidak |
+| **Hapus Brand Beserta Kredensial Terkait\*** | ✅ Ya | ❌ Tidak | ❌ Tidak |
+| **Melihat Audit Log Aktivitas IT & API** | ✅ Ya | ✅ Ya | ✅ Ya |
+| **Melihat Log Keamanan & Percobaan Login** | ✅ Ya | ❌ Tidak | ❌ Tidak |
+| **Melihat Pengaturan Infrastruktur** | ✅ Ya | ✅ Ya | ❌ Tidak |
+| **Ubah Pengaturan Infrastruktur\*** | ✅ Ya | ❌ Tidak | ❌ Tidak |
+| **Manajemen Pengguna IT (Tambah/Suspend)\*** | ✅ Ya | ❌ Tidak | ❌ Tidak |
+| **Proteksi Anti-Lockout Superadmin Terakhir** | 🔒 Dilindungi | — | — |
+
+*\* Aksi sensitif memerlukan validasi kata sandi (jendela elevasi re-autentikasi 5 menit).*
+
+---
+
+*Dikembangkan oleh **Billy Panca Wijaya** untuk keandalan infrastruktur WhatsApp Gateway enterprise yang aman, terisolasi, dan efisien.*

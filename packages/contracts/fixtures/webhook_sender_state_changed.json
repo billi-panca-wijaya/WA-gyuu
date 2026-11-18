@@ -1,0 +1,11 @@
+{
+  "event": "sender.state_changed",
+  "brand_id": "6d2ca2f2-1af9-475a-aa10-a97cbeac19d4",
+  "data": {
+    "sender_id": "snd_01jk98asdf",
+    "label": "CS Store Utama",
+    "phone_e164": "+6281298765432",
+    "connection_state": "ready",
+    "occurred_at": "2026-11-16T15:00:10Z"
+  }
+}

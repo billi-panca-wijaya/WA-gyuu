@@ -1,3 +1,16 @@
+# Dependencies
+node_modules/
+**/node_modules/
+vendor/
+
+# Build outputs
+dist/
+**/dist/
+.output/
+
+# Storage & Temporary
+storage/
+
 # Runtime Data & Databases
 data/
 *.sqlite

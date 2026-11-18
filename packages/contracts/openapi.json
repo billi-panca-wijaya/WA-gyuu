@@ -1,0 +1,1382 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "WAgyuu Central API Gateway",
+    "version": "1.0.0",
+    "description": "WAgyuu WhatsApp Session Management, Multi-Device Sender Engine, and 4-Digit OTP Gateway."
+  },
+  "servers": [
+    {
+      "url": "https://gateway.example.test",
+      "description": "Production or Staging Gateway Origin"
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "paths": {
+    "/v1/health/liveness": {
+      "get": {
+        "summary": "Check gateway liveness",
+        "operationId": "getLiveness",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Gateway process is alive",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/health/readiness": {
+      "get": {
+        "summary": "Check gateway readiness (DB, Redis, engine status)",
+        "operationId": "getReadiness",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Gateway is ready to serve traffic",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "One or more dependencies unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/capabilities": {
+      "get": {
+        "summary": "Retrieve gateway capabilities and supported pairing methods",
+        "operationId": "getCapabilities",
+        "responses": {
+          "200": {
+            "description": "Gateway capabilities",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CapabilitiesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/senders": {
+      "get": {
+        "summary": "List all WhatsApp senders for the authenticated brand",
+        "operationId": "listSenders",
+        "responses": {
+          "200": {
+            "description": "List of senders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendersListResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Register a new sender for the authenticated brand",
+        "operationId": "createSender",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSenderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sender registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SenderResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/senders/{id}": {
+      "get": {
+        "summary": "Get details of a specific sender",
+        "operationId": "getSender",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sender detail",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SenderResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "summary": "Update sender label or toggle OTP eligibility",
+        "operationId": "updateSender",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSenderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated sender",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SenderResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete an unlinked sender",
+        "operationId": "deleteSender",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sender deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SuccessResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/senders/{id}/pairing": {
+      "post": {
+        "summary": "Initiate pairing for a sender",
+        "operationId": "startPairing",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Pairing initiated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PairingResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Get active pairing QR code or pairing code",
+        "operationId": "getPairing",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Active pairing payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PairingResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/senders/{id}/start": {
+      "post": {
+        "summary": "Start sender engine",
+        "operationId": "startSender",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sender started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SenderResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/senders/{id}/stop": {
+      "post": {
+        "summary": "Stop sender engine without unlinking credentials",
+        "operationId": "stopSender",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sender stopped",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SenderResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/senders/{id}/logout": {
+      "post": {
+        "summary": "Unlink WhatsApp session and invalidate credentials",
+        "operationId": "logoutSender",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Session logged out",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SenderResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/senders/{id}/test-messages": {
+      "post": {
+        "summary": "Send a single test message from a sender to a trial recipient",
+        "operationId": "sendTestMessage",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TestMessageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Test message accepted for delivery",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TestMessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/otp/challenges": {
+      "post": {
+        "summary": "Create and queue a new 4-digit OTP challenge",
+        "operationId": "createOtpChallenge",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateChallengeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "OTP challenge queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChallengeResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limited or cooldown active",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "No eligible sender available",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/otp/challenges/{id}": {
+      "get": {
+        "summary": "Check status of an OTP challenge",
+        "operationId": "getChallengeStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Challenge status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChallengeStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/otp/challenges/{id}/resend": {
+      "post": {
+        "summary": "Resend OTP for an existing challenge family (invalidates predecessor)",
+        "operationId": "resendOtpChallenge",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResendChallengeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Replacement challenge queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResendChallengeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/otp/challenges/{id}/verify": {
+      "post": {
+        "summary": "Verify 4-digit code and consume challenge",
+        "operationId": "verifyOtpChallenge",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{40}$"
+            }
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKey"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyOtpRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Code verified and challenge consumed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyOtpResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or expired code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/logs": {
+      "get": {
+        "summary": "Retrieve sanitized delivery and activity logs for brand",
+        "operationId": "getLogs",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sender_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Log entries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "API-Key"
+      }
+    },
+    "parameters": {
+      "IdempotencyKey": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": true,
+        "description": "UUID or stable ASCII string (16-128 chars) identifying operation",
+        "schema": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 128
+        }
+      }
+    },
+    "schemas": {
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "degraded",
+              "down"
+            ]
+          },
+          "services": {
+            "type": "object"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "status",
+          "meta"
+        ]
+      },
+      "CapabilitiesResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "pairing_methods": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "qr",
+                    "phone_code"
+                  ]
+                }
+              },
+              "text_test_supported": {
+                "type": "boolean"
+              },
+              "delivery_receipts_supported": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "pairing_methods",
+              "text_test_supported",
+              "delivery_receipts_supported"
+            ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "CreateSenderRequest": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "pairing_method": {
+            "type": "string",
+            "enum": [
+              "qr",
+              "phone_code"
+            ],
+            "default": "qr"
+          },
+          "phone": {
+            "type": "string",
+            "description": "Optional phone for pairing code method"
+          }
+        },
+        "required": [
+          "label"
+        ]
+      },
+      "UpdateSenderRequest": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "otp_enabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SenderResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "phone_e164": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "pairing_method": {
+                "type": "string"
+              },
+              "connection_state": {
+                "type": "string",
+                "enum": [
+                  "created",
+                  "starting",
+                  "pairing",
+                  "ready",
+                  "reconnecting",
+                  "stopped",
+                  "logged_out",
+                  "action_required",
+                  "failed"
+                ]
+              },
+              "otp_enabled": {
+                "type": "boolean"
+              },
+              "last_successful_send_at": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "last_error": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "connection_state",
+              "otp_enabled"
+            ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "SendersListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "phone_e164": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "pairing_method": {
+                  "type": "string"
+                },
+                "connection_state": {
+                  "type": "string"
+                },
+                "otp_enabled": {
+                  "type": "boolean"
+                },
+                "last_successful_send_at": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "label",
+                "connection_state",
+                "otp_enabled"
+              ]
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "PairingResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "sender_id": {
+                "type": "string"
+              },
+              "pairing_method": {
+                "type": "string"
+              },
+              "qr_data_url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "pairing_code": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "expires_at": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "sender_id",
+              "pairing_method"
+            ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "TestMessageRequest": {
+        "type": "object",
+        "properties": {
+          "recipient_phone_e164": {
+            "type": "string",
+            "pattern": "^\\+[1-9][0-9]{7,14}$"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "recipient_phone_e164",
+          "message"
+        ]
+      },
+      "TestMessageResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "delivery_id": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "queued",
+                  "preparing",
+                  "submitted",
+                  "failed"
+                ]
+              }
+            },
+            "required": [
+              "delivery_id",
+              "status"
+            ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "CreateChallengeRequest": {
+        "type": "object",
+        "properties": {
+          "phone_e164": {
+            "type": "string",
+            "pattern": "^\\+[1-9][0-9]{7,14}$"
+          },
+          "purpose": {
+            "type": "string",
+            "enum": [
+              "login",
+              "otp_test"
+            ],
+            "default": "login"
+          },
+          "browser_binding": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "required": [
+          "phone_e164",
+          "purpose",
+          "browser_binding"
+        ]
+      },
+      "ChallengeResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "challenge_id": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              },
+              "challenge_state": {
+                "type": "string",
+                "enum": [
+                  "queued",
+                  "pending"
+                ]
+              },
+              "delivery_status": {
+                "type": "string",
+                "enum": [
+                  "queued",
+                  "preparing",
+                  "submitted"
+                ]
+              },
+              "masked_phone": {
+                "type": "string"
+              },
+              "queue_deadline_at": {
+                "type": "string"
+              },
+              "expires_at": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "ttl_seconds": {
+                "type": "integer",
+                "default": 300
+              },
+              "resend_available_at": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "challenge_id",
+              "challenge_state",
+              "delivery_status",
+              "masked_phone",
+              "ttl_seconds",
+              "resend_available_at"
+            ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "ChallengeStatusResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "challenge_id": {
+                "type": "string"
+              },
+              "challenge_state": {
+                "type": "string",
+                "enum": [
+                  "queued",
+                  "pending",
+                  "verified",
+                  "expired",
+                  "locked",
+                  "superseded",
+                  "cancelled"
+                ]
+              },
+              "delivery_status": {
+                "type": "string"
+              },
+              "expires_at": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "resend_available_at": {
+                "type": "string"
+              },
+              "attempts_remaining": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "challenge_id",
+              "challenge_state",
+              "delivery_status",
+              "resend_available_at",
+              "attempts_remaining"
+            ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "ResendChallengeRequest": {
+        "type": "object",
+        "properties": {
+          "browser_binding": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "required": [
+          "browser_binding"
+        ]
+      },
+      "ResendChallengeResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "challenge_id": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              },
+              "replaces_challenge_id": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{40}$"
+              },
+              "challenge_state": {
+                "type": "string"
+              },
+              "delivery_status": {
+                "type": "string"
+              },
+              "masked_phone": {
+                "type": "string"
+              },
+              "expires_at": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "ttl_seconds": {
+                "type": "integer"
+              },
+              "resend_available_at": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "challenge_id",
+              "replaces_challenge_id",
+              "challenge_state",
+              "delivery_status",
+              "masked_phone"
+            ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "VerifyOtpRequest": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[0-9]{4}$"
+          },
+          "browser_binding": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "required": [
+          "code",
+          "browser_binding"
+        ]
+      },
+      "VerifyOtpResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "verification_id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "challenge_id": {
+                "type": "string"
+              },
+              "brand_id": {
+                "type": "string"
+              },
+              "purpose": {
+                "type": "string"
+              },
+              "phone_e164": {
+                "type": "string"
+              },
+              "browser_binding": {
+                "type": "string"
+              },
+              "verified_at": {
+                "type": "string"
+              },
+              "result_expires_at": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "verification_id",
+              "challenge_id",
+              "brand_id",
+              "purpose",
+              "phone_e164",
+              "browser_binding",
+              "verified_at"
+            ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "LogsResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "timestamp": {
+                  "type": "string"
+                },
+                "event": {
+                  "type": "string"
+                },
+                "sender_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "masked_phone": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "status": {
+                  "type": "string"
+                },
+                "request_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "timestamp",
+                "event",
+                "status"
+              ]
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "SuccessResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "success",
+          "meta"
+        ]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "UNAUTHENTICATED",
+                  "FORBIDDEN",
+                  "BRAND_DISABLED",
+                  "RESOURCE_NOT_FOUND",
+                  "IDEMPOTENCY_CONFLICT",
+                  "REQUEST_IN_PROGRESS",
+                  "OTP_NOT_READY",
+                  "OTP_INVALID",
+                  "OTP_EXPIRED",
+                  "OTP_CONSUMED",
+                  "OTP_ATTEMPTS_EXCEEDED",
+                  "RESEND_COOLDOWN",
+                  "RATE_LIMITED",
+                  "VALIDATION_FAILED",
+                  "BOT_CHECK_FAILED",
+                  "CAPABILITY_NOT_SUPPORTED",
+                  "NO_SENDER_AVAILABLE",
+                  "QUEUE_UNAVAILABLE",
+                  "DEPENDENCY_UNAVAILABLE",
+                  "OPERATION_OUTCOME_UNKNOWN"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "retryable": {
+                "type": "boolean"
+              },
+              "attempts_remaining": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          },
+          "meta": {
+            "$ref": "#/components/schemas/Meta"
+          }
+        },
+        "required": [
+          "error",
+          "meta"
+        ]
+      },
+      "Meta": {
+        "type": "object",
+        "properties": {
+          "request_id": {
+            "type": "string"
+          },
+          "server_time": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id"
+        ]
+      }
+    }
+  }
+}

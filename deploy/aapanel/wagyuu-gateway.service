@@ -1,0 +1,21 @@
+[Unit]
+Description=WAgyuu Central WhatsApp API Gateway
+After=network.target
+
+[Service]
+Type=simple
+User=www
+WorkingDirectory=/www/wwwroot/wa-api.billi-panca-wijaya.my.id/apps/gateway
+ExecStart=/usr/bin/node dist/main.js
+Restart=always
+RestartSec=5
+Environment=NODE_ENV=production
+Environment=PORT=18091
+Environment=WAGYUU_HMAC_SECRET=wgy_live_interwin_secret_token_change_in_prod
+Environment=DATABASE_PATH=/www/wwwroot/wa-api.billi-panca-wijaya.my.id/data/wagyuu.sqlite
+Environment=WAGYUU_SESSIONS_PATH=/www/wwwroot/wa-api.billi-panca-wijaya.my.id/data/sessions
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

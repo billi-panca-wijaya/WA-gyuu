@@ -1,0 +1,11 @@
+Path,Kategori,Alasan,Pengganti,Status,Uji Verifikasi
+"laravel-headless-starter/patch.js",Script Patch Sekali Pakai,"Dibuat untuk mengubah kode di masa lalu; isi perubahan sudah ada di file utama",Tidak Ada,"Diarsipkan (storage/retired_patches)","Build npm run build & test lolos tanpa script"
+"laravel-headless-starter/patch2.js",Script Patch Sekali Pakai,"Script patch sementara",Tidak Ada,"Diarsipkan (storage/retired_patches)","Build npm run build & test lolos tanpa script"
+"laravel-headless-starter/patch3.js",Script Patch Sekali Pakai,"Script patch sementara",Tidak Ada,"Diarsipkan (storage/retired_patches)","Build npm run build & test lolos tanpa script"
+"laravel-headless-starter/patch4.js",Script Patch Sekali Pakai,"Script patch sementara",Tidak Ada,"Diarsipkan (storage/retired_patches)","Build npm run build & test lolos tanpa script"
+"laravel-headless-starter/patch5.js",Script Patch Sekali Pakai,"Script patch sementara",Tidak Ada,"Diarsipkan (storage/retired_patches)","Build npm run build & test lolos tanpa script"
+"laravel-headless-starter/patch_css.js",Script Patch Sekali Pakai,"Script patch sementara CSS",Tidak Ada,"Diarsipkan (storage/retired_patches)","CSS build lolos tanpa script"
+"laravel-headless-starter/patch_css2.js",Script Patch Sekali Pakai,"Script patch sementara CSS",Tidak Ada,"Diarsipkan (storage/retired_patches)","CSS build lolos tanpa script"
+"laravel-headless-starter/patch_ts.js",Script Patch Sekali Pakai,"Script patch sementara TypeScript",Tidak Ada,"Diarsipkan (storage/retired_patches)","Typecheck tsc lolos tanpa script"
+"laravel-headless-starter/apps/react/src/openwa",Komponen Eksternal Salinan,"Salinan dashboard OpenWA lama dengan banyak menu 501 dan styling rumit","Modul Backoffice WhatsApp Mandiri (5 menu di features/whatsapp)",Kandidat Pensiun (M7),"Frontend build & navigasi backoffice baru teruji"
+"wa-gateway/database/migrations/0001_create_whatsapp_user_columns.php",Migration Lama Berbahaya,"Mengubah kolom users.name dan email menjadi nullable serta down() menghapus kolom","Migration ekspansif wa_login_attempts tanpa merusak users",Pensiun (Diabaikan M4),"Migrate di host berjalan aman tanpa modifikasi users"

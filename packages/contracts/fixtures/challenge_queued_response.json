@@ -1,0 +1,16 @@
+{
+  "data": {
+    "challenge_id": "a57d83c0a60c8c6b9ef3417f9484fb134b06c989",
+    "challenge_state": "queued",
+    "delivery_status": "queued",
+    "masked_phone": "+62******789",
+    "queue_deadline_at": "2026-11-16T15:00:30Z",
+    "expires_at": null,
+    "ttl_seconds": 300,
+    "resend_available_at": "2026-11-16T15:00:30Z"
+  },
+  "meta": {
+    "request_id": "00000000-0000-0000-0000-000000000002",
+    "server_time": "2026-11-16T15:00:00Z"
+  }
+}

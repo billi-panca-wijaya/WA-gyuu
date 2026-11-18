@@ -1,0 +1,15 @@
+{
+  "data": {
+    "verification_id": "6cb3ba0e-804d-4276-b0d7-40db0a26ee7a",
+    "challenge_id": "a57d83c0a60c8c6b9ef3417f9484fb134b06c989",
+    "brand_id": "6d2ca2f2-1af9-475a-aa10-a97cbeac19d4",
+    "purpose": "login",
+    "phone_e164": "+628123456789",
+    "browser_binding": "db206d5fe1b4cdb602127ee7bcbdac5fb660a232ee07bd78b28f297542f043dd",
+    "verified_at": "2026-11-16T15:01:00Z",
+    "result_expires_at": "2026-11-16T15:02:00Z"
+  },
+  "meta": {
+    "request_id": "00000000-0000-0000-0000-000000000004"
+  }
+}

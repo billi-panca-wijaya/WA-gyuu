@@ -1,0 +1,10 @@
+{
+  "event": "otp.delivery_changed",
+  "brand_id": "6d2ca2f2-1af9-475a-aa10-a97cbeac19d4",
+  "data": {
+    "challenge_id": "a57d83c0a60c8c6b9ef3417f9484fb134b06c989",
+    "delivery_id": "del_01jk98asdf",
+    "status": "delivered",
+    "occurred_at": "2026-11-16T15:00:04Z"
+  }
+}

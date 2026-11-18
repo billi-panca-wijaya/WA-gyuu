@@ -1,0 +1,47 @@
+/* Design proposal only; not installed in the application. */
+:root {
+  color-scheme: dark;
+  --wgy-bg: #0b1220;
+  --wgy-surface: #111b2c;
+  --wgy-surface-raised: #18253a;
+  --wgy-text: #e5edf5;
+  --wgy-text-muted: #a8b5c5;
+  --wgy-border: #33455d;
+  --wgy-input-border: #71849c;
+  --wgy-primary: #22c55e;
+  --wgy-primary-hover: #4ade80;
+  --wgy-on-primary: #07140c;
+  --wgy-focus: #86efac;
+  --wgy-danger-text: #fca5a5;
+  --wgy-warning-text: #fcd34d;
+  --wgy-info-text: #93c5fd;
+  --wgy-success-text: #86efac;
+  --wgy-font: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --wgy-font-mono: ui-monospace, "Cascadia Code", Consolas, monospace;
+  --wgy-text-sm: 0.875rem;
+  --wgy-text-base: 1rem;
+  --wgy-title: 1.75rem;
+  --wgy-line-height: 1.5;
+  --wgy-space-1: 0.25rem;
+  --wgy-space-2: 0.5rem;
+  --wgy-space-3: 0.75rem;
+  --wgy-space-4: 1rem;
+  --wgy-space-6: 1.5rem;
+  --wgy-space-8: 2rem;
+  --wgy-radius-control: 0.625rem;
+  --wgy-radius-card: 0.875rem;
+  --wgy-control-height: 2.75rem;
+  --wgy-table-row-height: 3rem;
+  --wgy-sidebar-width: 15rem;
+  --wgy-header-height: 4rem;
+  --wgy-content-max: 90rem;
+  --wgy-focus-ring: 0 0 0 3px var(--wgy-focus);
+  --wgy-motion-fast: 140ms;
+}
+
+/* Recheck contrast on final components, including alpha/disabled/hover states. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --wgy-motion-fast: 0ms;
+  }
+}

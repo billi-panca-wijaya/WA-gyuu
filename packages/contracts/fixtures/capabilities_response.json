@@ -1,0 +1,13 @@
+{
+  "data": {
+    "pairing_methods": [
+      "qr"
+    ],
+    "text_test_supported": true,
+    "delivery_receipts_supported": true
+  },
+  "meta": {
+    "request_id": "00000000-0000-0000-0000-000000000001",
+    "server_time": "2026-11-16T15:00:00Z"
+  }
+}

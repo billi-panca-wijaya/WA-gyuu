@@ -1,0 +1,14 @@
+{
+  "data": {
+    "challenge_id": "a57d83c0a60c8c6b9ef3417f9484fb134b06c989",
+    "challenge_state": "pending",
+    "delivery_status": "delivered",
+    "expires_at": "2026-11-16T15:05:00Z",
+    "resend_available_at": "2026-11-16T15:00:30Z",
+    "attempts_remaining": 5
+  },
+  "meta": {
+    "request_id": "00000000-0000-0000-0000-000000000003",
+    "server_time": "2026-11-16T15:00:05Z"
+  }
+}

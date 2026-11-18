@@ -1,0 +1,11 @@
+{
+  "error": {
+    "code": "OTP_INVALID",
+    "message": "Kode tidak sesuai.",
+    "retryable": false,
+    "attempts_remaining": 4
+  },
+  "meta": {
+    "request_id": "00000000-0000-0000-0000-000000000005"
+  }
+}

@@ -1,0 +1,40 @@
+name: wa-gateway
+
+services:
+  openwa:
+    image: wagyuu-gateway:1.0.0
+    container_name: wa-gateway-openwa
+    restart: unless-stopped
+    stop_grace_period: 30s
+    ports:
+      - '127.0.0.1:18091:18091'
+    environment:
+      - NODE_ENV=production
+      - PORT=18091
+      - DATABASE_PATH=/app/data/wagyuu.sqlite
+      - WAGYUU_SESSIONS_PATH=/app/data/sessions
+      - WAGYUU_HMAC_SECRET=wgy_live_interwin_secret_token_change_in_prod
+      - TZ=Asia/Jakarta
+    volumes:
+      - /www/wwwroot/wa-api.billi-panca-wijaya.my.id/data:/app/data
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://127.0.0.1:18091/v1/health/liveness']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+    networks:
+      wa-gateway-net:
+        aliases:
+          - openwa
+          - wagyuu
+
+networks:
+  wa-gateway-net:
+    name: wa-gateway-net
+    external: true
