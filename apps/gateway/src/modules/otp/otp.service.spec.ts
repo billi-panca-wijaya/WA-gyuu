@@ -127,7 +127,7 @@ describe('OtpService', () => {
       // Verify delivery call
       expect(baileysAdapter.sendTextMessage).toHaveBeenCalled();
       const calledMessage = baileysAdapter.sendTextMessage.mock.calls[0][2];
-      expect(calledMessage).toMatch(/Kode verifikasi WhatsApp Anda adalah \d{4}\./);
+      expect(calledMessage).toMatch(/Kode verifikasi .* Anda adalah \*\d{4}\*\./);
     });
 
     it('should throw 429 when cooldown is active (< 30 seconds)', async () => {

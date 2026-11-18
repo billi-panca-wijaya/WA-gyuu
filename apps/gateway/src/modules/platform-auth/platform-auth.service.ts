@@ -59,10 +59,10 @@ export class PlatformAuthService {
       return null;
     }
 
-    // Refresh idle expiration (extend 15 minutes up to max 8 hours from creation)
-    const eightHoursFromCreated = new Date(session.createdAt.getTime() + 8 * 60 * 60 * 1000);
-    const fifteenMinsFromNow = new Date(now.getTime() + 15 * 60 * 1000);
-    const newExpiry = fifteenMinsFromNow < eightHoursFromCreated ? fifteenMinsFromNow : eightHoursFromCreated;
+    // Refresh idle expiration (extend 24 hours up to max 30 days from creation)
+    const maxSessionLimit = new Date(session.createdAt.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const idleExtended = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const newExpiry = idleExtended < maxSessionLimit ? idleExtended : maxSessionLimit;
 
     if (newExpiry.getTime() > session.expiresAt.getTime()) {
       this.sessionRepo.update(session.id, { expiresAt: newExpiry }).catch(() => {});
@@ -167,7 +167,7 @@ export class PlatformAuthService {
     // Generate random 256-bit session token
     const rawSessionToken = 'ops_' + crypto.randomBytes(32).toString('hex');
     const tokenHash = this.hashSessionToken(rawSessionToken);
-    const expiresAt = new Date(now.getTime() + 15 * 60 * 1000); // 15 mins initial idle
+    const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours initial idle timeout
 
     const session = this.sessionRepo.create({
       userId: user.id,

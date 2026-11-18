@@ -524,11 +524,14 @@ class OtpService
     {
         $template = (string) $this->gatewayConfig(
             'message_template',
-            'Your :app sign-in code is :code. Expires in :minutes minutes. Do not share this code.'
+            'Kode verifikasi :brand Anda adalah :code. Berlaku :minutes menit. Demi keamanan akun Anda, jangan bagikan kode ini kepada siapa pun.'
         );
 
+        $brandName = (string) $this->gatewayConfig('brand_name', config('app.name', 'WAgyuu'));
+
         return strtr($template, [
-            ':app' => (string) config('app.name'),
+            ':brand' => $brandName,
+            ':app' => $brandName,
             ':code' => $code,
             ':minutes' => (string) max(1, (int) round($minutes)),
         ]);

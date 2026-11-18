@@ -57,6 +57,8 @@ return [
     'ttl_seconds' => (int) env('WA_OTP_TTL_SECONDS', 300),
     'resend_cooldown_seconds' => (int) env('WA_OTP_RESEND_COOLDOWN_SECONDS', 30),
     'max_attempts' => (int) env('WA_OTP_MAX_ATTEMPTS', 5),
+    'brand_name' => env('WA_OTP_BRAND_NAME', env('APP_NAME', 'WAgyuu')),
+    'message_template' => env('WA_OTP_MESSAGE_TEMPLATE', 'Kode verifikasi :brand Anda adalah :code. Berlaku :minutes menit. Demi keamanan akun Anda, jangan bagikan kode ini kepada siapa pun.'),
 
     /*
     |--------------------------------------------------------------------------

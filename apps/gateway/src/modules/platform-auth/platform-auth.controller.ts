@@ -36,14 +36,16 @@ export class PlatformAuthController {
 
     const result = await this.authService.login(identifier, password, ip, userAgent);
 
-    // Set secure HttpOnly cookie
+    // Set secure HttpOnly cookie (30 days persistence)
     const isProduction = process.env.NODE_ENV === 'production';
+    const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
     res.cookie('wgy_ops_session', result.sessionToken, {
       httpOnly: true,
       secure: isProduction,
       sameSite: 'lax',
       path: '/',
-      expires: result.expiresAt,
+      maxAge: thirtyDaysMs,
+      expires: new Date(Date.now() + thirtyDaysMs),
     });
 
     return {

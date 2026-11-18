@@ -135,7 +135,8 @@ export class OtpService {
     await this.deliveryRepo.save(delivery);
 
     // Send WhatsApp OTP message via adapter
-    const message = `[${brand.name || 'WAgyuu'}] Kode verifikasi WhatsApp Anda adalah ${code}. Jangan bagikan kode ini kepada siapa pun. Berlaku 5 menit.`;
+    const brandName = brand.name || brand.code || 'WAgyuu';
+    const message = `Kode verifikasi ${brandName} Anda adalah *${code}*. Berlaku 5 menit. Demi keamanan akun Anda, jangan bagikan kode ini kepada siapa pun.`;
     try {
       const sendResult = await this.baileysAdapter.sendTextMessage(
         sender.id,
