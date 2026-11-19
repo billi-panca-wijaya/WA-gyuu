@@ -59,14 +59,16 @@ Sistem ini terbagi menjadi 3 bagian:
 
 ## 📱 3. Tampilan Dashboard (Mobile & Desktop)
 
-Dashboard admin dirancang agar nyaman digunakan baik di layar laptop/komputer maupun smartphone (mobile):
+Dashboard dirancang responsif agar nyaman digunakan baik di layar desktop maupun ponsel (mobile):
 
-- **Menu Burger Bar (Drawer Animasi):**
-  - Pada layar smartphone/mobile, menu navigasi tersembunyi secara otomatis dan dapat dibuka melalui tombol burger bar dengan animasi slide yang halus.
-  - Terdapat latar gelap transparan (backdrop) yang bisa diklik untuk menutup menu.
-  - Pada layar desktop, tombol burger dapat digunakan untuk menyembunyikan atau menampilkan sidebar navigasi agar ruang kerja lebih luas.
-- **Transisi Cepat:** Navigasi antar halaman berjalan instan tanpa perlu me-refresh halaman browser.
-- **Durasi Sesi Nyaman:** Masa aktif login admin diatur lebih panjang (idle 24 jam dan batas sesi 30 hari) agar Anda tidak sering ter-logout sendiri saat membuka dashboard.
+- **Header Sticky:** Bagian header dashboard tetap menempel di atas layar saat halaman di-scroll sehingga navigasi dan status akun selalu terlihat.
+- **Tombol Navigasi Cepat (Scroll-to-Top & Bottom):** Di sudut kanan bawah layar tersedia tombol melayang (*floating action buttons*) untuk langsung melompat ke posisi paling atas atau paling bawah halaman dengan satu klik.
+- **Menu Navigasi Responsif:**
+  - Pada layar ponsel, menu navigasi dapat dibuka dan ditutup melalui tombol burger bar dengan animasi transisi yang rapi.
+  - Pada layar desktop, menu samping dapat dilipat (*collapsed*) untuk memberikan ruang kerja yang lebih luas.
+- **Navigasi Tab Horizontal:** Tab pengaturan dapat digeser secara horizontal di perangkat mobile tanpa memotong tulisan tombol atau merusak tata letak.
+- **Penyimpanan Halaman Aktif:** Posisi halaman atau tab yang sedang dibuka otomatis tersimpan di memori browser, sehingga saat halaman di-refresh, Anda tetap berada di halaman yang sama.
+- **Durasi Sesi Nyaman:** Masa aktif login diatur lebih panjang (idle 24 jam dan batas sesi 30 hari) agar Anda tidak sering ter-logout sendiri saat membuka dashboard.
 
 ---
 

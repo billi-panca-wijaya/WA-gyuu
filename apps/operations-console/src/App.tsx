@@ -93,8 +93,21 @@ export const App: React.FC = () => {
         setSidebarOpen(false);
       }
     };
+
+    const handleHash = () => {
+      const hash = window.location.hash.replace('#', '') as ActiveMenu;
+      const validMenus: ActiveMenu[] = ['summary', 'brands', 'webhooks', 'logs', 'health', 'users', 'settings', 'docs'];
+      if (validMenus.includes(hash)) {
+        setActiveMenu(hash);
+      }
+    };
+
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener('hashchange', handleHash);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('hashchange', handleHash);
+    };
   }, []);
 
   const handleNavClick = (menu: ActiveMenu) => {
@@ -271,12 +284,12 @@ export const App: React.FC = () => {
           </div>
 
           <div className="wgy-header-right">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', minWidth: 0 }}>
+            <div className="wgy-header-user-wrap" style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', minWidth: 0 }}>
               <div className="wgy-header-user-icon" style={{ display: 'flex', alignItems: 'center' }}>
                 <User size={16} color="var(--wgy-text-muted)" />
               </div>
-              <div style={{ textAlign: 'right', minWidth: 0, overflow: 'hidden' }}>
-                <div className="wgy-header-username" style={{ fontSize: '0.825rem', fontWeight: 700, color: '#fff' }}>
+              <div className="wgy-header-user-info" style={{ textAlign: 'right', minWidth: 0, overflow: 'hidden' }}>
+                <div className="wgy-header-username" style={{ fontSize: '0.825rem', fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {user.full_name || user.fullName || user.username}
                 </div>
                 <div>

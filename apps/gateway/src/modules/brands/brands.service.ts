@@ -96,4 +96,8 @@ export class BrandsService implements OnModuleInit {
   async findByCode(code: string): Promise<Brand | null> {
     return this.brandRepo.findOne({ where: { code } });
   }
+
+  async updateSettings(id: string, config: string): Promise<void> {
+    await this.brandRepo.update(id, { config });
+  }
 }

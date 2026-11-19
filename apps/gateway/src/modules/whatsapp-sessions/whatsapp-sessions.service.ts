@@ -2,26 +2,49 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  Inject,
+  OnApplicationBootstrap,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { WhatsAppSession } from './entities/whatsapp-session.entity';
 import { BaileysAdapterService } from '../../engine-adapters/baileys/baileys-adapter.service';
+import { InboxStore } from './inbox.store';
 
 @Injectable()
-export class WhatsAppSessionsService {
+export class WhatsAppSessionsService implements OnApplicationBootstrap {
+  private readonly logger = new Logger(WhatsAppSessionsService.name);
   constructor(
     @InjectRepository(WhatsAppSession)
     private readonly sessionRepo: Repository<WhatsAppSession>,
     private readonly baileysAdapter: BaileysAdapterService,
+    private readonly inbox: InboxStore,
   ) {}
+
+  async onApplicationBootstrap() {
+    const previouslyLinked = await this.sessionRepo.createQueryBuilder('session')
+      .innerJoin('session.brand', 'brand')
+      .select('session.id', 'id')
+      .addSelect('session.brandId', 'brandId')
+      .addSelect('brand.code', 'code')
+      .where('session.connectionState IN (:...states)', { states: ['ready', 'starting', 'reconnecting'] })
+      .getRawMany<{ id: string; brandId: string; code: string }>();
+
+    for (const session of previouslyLinked) {
+      if (!this.inbox.enabled(session.code) || !this.baileysAdapter.hasSavedAuthentication(session.id)) continue;
+      try {
+        await this.startPairing(session.brandId, session.id);
+      } catch {
+        this.logger.warn('Sesi WhatsApp untuk kotak masuk belum tersambung kembali.');
+      }
+    }
+  }
 
   getCapabilities() {
     return {
       pairing_methods: ['qr'],
       text_test_supported: true,
-      delivery_receipts_supported: true,
+      delivery_receipts_supported: false,
     };
   }
 
@@ -73,11 +96,22 @@ export class WhatsAppSessionsService {
 
   async startPairing(brandId: string, senderId: string): Promise<{ sender_id: string; pairing_method: string; qr_data_url?: string }> {
     const session = await this.getSender(brandId, senderId);
+    const brand = await this.sessionRepo.createQueryBuilder('session')
+      .innerJoin('session.brand', 'brand')
+      .select('brand.code', 'code')
+      .where('session.id = :id', { id: senderId })
+      .getRawOne<{ code: string }>();
 
     session.connectionState = 'pairing';
     await this.sessionRepo.save(session);
 
     await this.baileysAdapter.startSession(senderId, {
+      onInboxText: brand && this.inbox.enabled(brand.code)
+        ? message => this.inbox.record(senderId, message)
+        : undefined,
+      onInboxHistory: brand && this.inbox.historyEnabled(brand.code)
+        ? messages => this.inbox.recordHistory(senderId, messages)
+        : undefined,
       onQr: async (qrDataUrl) => {
         session.qrCode = qrDataUrl;
         session.connectionState = 'pairing';
@@ -186,14 +220,6 @@ export class WhatsAppSessionsService {
       order: { lastSuccessfulSendAt: 'ASC' },
     });
 
-    if (!senders || senders.length === 0) {
-      // In simulation/dev mode, if a sender exists with connectionState 'pairing' or 'created', allow it if configured
-      const anySender = await this.sessionRepo.findOne({
-        where: { brandId, otpEnabled: true },
-      });
-      return anySender || null;
-    }
-
-    return senders[0];
+    return senders.find(sender => this.baileysAdapter.canSend(sender.id)) ?? null;
   }
 }

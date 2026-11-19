@@ -99,10 +99,16 @@ export class AdminOpsService {
   async updateSettings(newSettings: any): Promise<any> {
     const current = await this.getSettings();
     this.inMemorySettings = { ...current, ...newSettings };
+    const filePath = this.getSettingsFilePath();
     try {
-      const filePath = this.getSettingsFilePath();
+      if (!fs.existsSync(path.dirname(filePath))) {
+        fs.mkdirSync(path.dirname(filePath), { recursive: true });
+      }
       fs.writeFileSync(filePath, JSON.stringify(this.inMemorySettings, null, 2), 'utf8');
-    } catch {}
+      console.log(`[AdminOpsService] Successfully persisted settings to ${filePath}`);
+    } catch (err: any) {
+      console.error(`[AdminOpsService] Failed to persist settings to ${filePath}:`, err.message);
+    }
     return this.inMemorySettings;
   }
 

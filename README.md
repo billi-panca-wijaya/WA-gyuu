@@ -59,14 +59,16 @@ The system consists of three parts:
 
 ## 📱 3. Dashboard Interface (Mobile & Desktop)
 
-The admin dashboard is responsive and works smoothly across mobile phones and desktop displays:
+The dashboard is designed to be fully responsive for desktop and mobile displays:
 
-- **Animated Hamburger Menu (Drawer):**
-  - On mobile phones, the navigation menu is hidden by default and slides into view smoothly when clicking the burger button.
-  - An animated dark backdrop overlay allows you to tap outside to dismiss the menu.
-  - On desktop screens, the burger button collapses or expands the sidebar for a distraction-free view.
-- **Fast State Transitions:** Navigating between tabs occurs seamlessly without full-page browser reloads.
-- **Comfortable Session Duration:** Admin login sessions stay active longer (24-hour idle timeout and 30-day session maximum) so you are not logged out abruptly.
+- **Sticky Header:** The header stays pinned at the top while scrolling, ensuring navigation controls and user status remain visible.
+- **Quick Scroll Navigation (Scroll-to-Top & Bottom):** Floating action buttons in the bottom-right corner let you jump to the top or bottom of the screen with a single click.
+- **Responsive Navigation Drawer:**
+  - On mobile phones, the menu opens and closes via the hamburger bar with a smooth sliding drawer.
+  - On desktop screens, the sidebar can be collapsed to provide more working area.
+- **Horizontal Tabs Scrolling:** Settings sub-tabs scroll horizontally on narrow screens without text truncation or awkward line breaks.
+- **Active Page Persistence:** The current tab is remembered in browser storage, so refreshing the page preserves your exact location instead of resetting to the homepage.
+- **Comfortable Session Duration:** Sessions stay active longer (24-hour idle timeout and 30-day session maximum) so you are not logged out abruptly.
 
 ---
 

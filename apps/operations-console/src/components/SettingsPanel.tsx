@@ -22,6 +22,8 @@ type SettingsTab = 'database' | 'engine' | 'otp' | 'portal_auth' | 'network';
 export const SettingsPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('database');
   const [savedNotice, setSavedNotice] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   // Database Form States
   const [dbType, setDbType] = useState<'sqlite' | 'mongodb' | 'postgres' | 'mysql'>('sqlite');
@@ -104,6 +106,9 @@ export const SettingsPanel: React.FC = () => {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaving(true);
+    setSaveError(null);
+
     const payload = {
       dbType,
       dbHost,
@@ -134,17 +139,30 @@ export const SettingsPanel: React.FC = () => {
     }
 
     try {
-      await fetch('/v1/ops/settings', {
+      const res = await fetch('/v1/ops/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-    } catch {
-      // ignore
-    }
 
-    setSavedNotice(true);
-    setTimeout(() => setSavedNotice(false), 3000);
+      if (res.ok) {
+        const json = await res.json();
+        const updated = json?.data || payload;
+        applySettings(updated);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('wgy_gateway_settings', JSON.stringify(updated));
+        }
+        setSavedNotice(true);
+        setTimeout(() => setSavedNotice(false), 3500);
+      } else {
+        const errJson = await res.json().catch(() => null);
+        setSaveError(errJson?.message || 'Gagal menyimpan pengaturan ke server.');
+      }
+    } catch (err: any) {
+      setSaveError('Terjadi kendala koneksi ke gateway: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -178,6 +196,23 @@ export const SettingsPanel: React.FC = () => {
             fontWeight: 700,
           }}>
             <Check size={16} /> Pengaturan Berhasil Disimpan
+          </div>
+        )}
+
+        {saveError && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            padding: '0.5rem 1rem',
+            borderRadius: '0.5rem',
+            backgroundColor: 'rgba(239, 68, 68, 0.2)',
+            border: '1px solid #ef4444',
+            color: '#fca5a5',
+            fontSize: '0.85rem',
+            fontWeight: 700,
+          }}>
+            {saveError}
           </div>
         )}
       </div>

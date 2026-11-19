@@ -2,6 +2,8 @@ import {
   Controller,
   Post,
   Get,
+  Header,
+  Patch,
   Param,
   Body,
   Query,
@@ -17,11 +19,39 @@ import { BrandAuthGuard } from '../authentication/guards/brand-auth.guard';
 import { CurrentBrand } from '../../common/decorators/brand.decorator';
 import { BrandEntity } from '../brands/entities/brand.entity';
 import { RequireScope } from '../../common/decorators/require-scope.decorator';
+import { BrandsService } from '../brands/brands.service';
+import { brandSettings, DEFAULT_OTP_TEMPLATE, normalizeOtpTemplate, OTP_MINUTES, OTP_SAFETY_FOOTER, otpTemplate } from './otp-message';
 
 @Controller('v1')
 @UseGuards(BrandAuthGuard)
 export class OtpController {
-  constructor(private readonly otpService: OtpService) {}
+  constructor(
+    private readonly otpService: OtpService,
+    private readonly brands: BrandsService,
+  ) {}
+
+  @Get('otp/template')
+  @RequireScope('otp:read', 'senders:write')
+  @Header('Cache-Control', 'no-store')
+  getTemplate(@CurrentBrand() brand: BrandEntity) {
+    return {
+      template: otpTemplate(brand.config),
+      default_template: DEFAULT_OTP_TEMPLATE,
+      brand_name: brand.name || brand.code,
+      minutes: OTP_MINUTES,
+      safety_footer: OTP_SAFETY_FOOTER,
+    };
+  }
+
+  @Patch('otp/template')
+  @RequireScope('otp:read', 'senders:write')
+  @Header('Cache-Control', 'no-store')
+  async updateTemplate(@CurrentBrand() brand: BrandEntity, @Body('template') input: unknown) {
+    const template = normalizeOtpTemplate(input);
+    const config = JSON.stringify({ ...brandSettings(brand.config), otpTemplate: template });
+    await this.brands.updateSettings(brand.id, config);
+    return this.getTemplate({ ...brand, config });
+  }
 
   @Post('otp/challenges')
   @HttpCode(HttpStatus.ACCEPTED)

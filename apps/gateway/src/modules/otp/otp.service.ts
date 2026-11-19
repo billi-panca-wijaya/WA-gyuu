@@ -19,6 +19,7 @@ import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { BrandEntity } from '../brands/entities/brand.entity';
 import { WhatsAppSessionsService } from '../whatsapp-sessions/whatsapp-sessions.service';
 import { BaileysAdapterService } from '../../engine-adapters/baileys/baileys-adapter.service';
+import { OTP_MINUTES, renderOtpMessage } from './otp-message';
 
 export function maskPhone(phone: string): string {
   if (!phone || phone.length <= 6) return '*'.repeat(phone?.length || 0);
@@ -59,7 +60,7 @@ export class OtpService {
       order: { createdAt: 'DESC' },
     });
 
-    if (existing && existing.state !== 'expired' && existing.state !== 'verified') {
+    if (existing && existing.state !== 'expired' && existing.state !== 'verified' && existing.deliveryStatus !== 'failed') {
       const resendAt = existing.resendAvailableAt ? existing.resendAvailableAt.getTime() : 0;
       if (resendAt > now) {
         const retryAfter = Math.ceil((resendAt - now) / 1000);
@@ -98,7 +99,7 @@ export class OtpService {
       .digest('hex');
 
     const deliveryId = uuidv4();
-    const expiresAt = new Date(now + 300 * 1000); // 5 minutes
+    const expiresAt = new Date(now + OTP_MINUTES * 60 * 1000);
     const resendAvailableAt = new Date(now + 30 * 1000); // 30s cooldown
     const queueDeadlineAt = new Date(now + 30 * 1000);
 
@@ -108,10 +109,9 @@ export class OtpService {
       phoneE164: dto.phone_e164,
       purpose,
       codeVerifierHmac,
-      codePlain: code,
       browserBindingHash: dto.browser_binding || null,
       state: 'pending',
-      deliveryStatus: 'submitted',
+      deliveryStatus: 'queued',
       attemptCount: 0,
       maxAttempts: 5,
       expiresAt,
@@ -130,31 +130,43 @@ export class OtpService {
       brandId: brand.id,
       senderId: sender.id,
       phoneE164: dto.phone_e164,
-      status: 'submitted',
+      status: 'queued',
     });
     await this.deliveryRepo.save(delivery);
 
     // Send WhatsApp OTP message via adapter
     const brandName = brand.name || brand.code || 'WAgyuu';
-    const message = `Kode verifikasi ${brandName} Anda adalah *${code}*. Berlaku 5 menit. Demi keamanan akun Anda, jangan bagikan kode ini kepada siapa pun.`;
+    const message = renderOtpMessage(brand.config, brandName, code);
+    let sendStatus = 'failed';
     try {
       const sendResult = await this.baileysAdapter.sendTextMessage(
         sender.id,
         dto.phone_e164,
         message,
       );
-      if (sendResult.status === 'delivered') {
-        challenge.deliveryStatus = 'delivered';
-        await this.challengeRepo.save(challenge);
-        delivery.status = 'delivered';
-        delivery.deliveredAt = new Date();
-        await this.deliveryRepo.save(delivery);
-      }
-    } catch (err) {
-      delivery.status = 'failed';
-      delivery.errorMessage = (err as Error).message;
-      await this.deliveryRepo.save(delivery);
+      sendStatus = sendResult.status;
+    } catch {
+      // A transport exception is a failed submission without exposing provider details.
     }
+
+    if (sendStatus !== 'submitted' && sendStatus !== 'delivered') {
+      challenge.state = 'failed';
+      challenge.deliveryStatus = 'failed';
+      delivery.status = 'failed';
+      delivery.errorMessage = 'WhatsApp submission failed.';
+      await this.challengeRepo.save(challenge);
+      await this.deliveryRepo.save(delivery);
+      throw new HttpException(
+        { code: 'OTP_SEND_FAILED', message: 'Kode WhatsApp gagal dikirim. Silakan coba lagi.' },
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+
+    challenge.deliveryStatus = sendStatus;
+    delivery.status = sendStatus;
+    if (sendStatus === 'delivered') delivery.deliveredAt = new Date();
+    await this.challengeRepo.save(challenge);
+    await this.deliveryRepo.save(delivery);
 
     return {
       challenge_id: challenge.id,
@@ -163,7 +175,7 @@ export class OtpService {
       masked_phone: maskPhone(challenge.phoneE164),
       queue_deadline_at: queueDeadlineAt.toISOString(),
       expires_at: expiresAt.toISOString(),
-      ttl_seconds: 300,
+      ttl_seconds: OTP_MINUTES * 60,
       resend_available_at: resendAvailableAt.toISOString(),
     };
   }
@@ -193,6 +205,7 @@ export class OtpService {
       challenge_id: challenge.id,
       challenge_state: challenge.state,
       delivery_status: challenge.deliveryStatus,
+      masked_phone: maskPhone(challenge.phoneE164),
       expires_at: challenge.expiresAt.toISOString(),
       resend_available_at: challenge.resendAvailableAt.toISOString(),
       attempts_remaining: Math.max(0, challenge.maxAttempts - challenge.attemptCount),
@@ -267,6 +280,10 @@ export class OtpService {
         code: 'OTP_EXPIRED',
         message: 'Kode telah kedaluwarsa. Silakan minta kode baru.',
       });
+    }
+
+    if (challenge.deliveryStatus === 'failed' || challenge.deliveryStatus === 'queued') {
+      throw new UnauthorizedException({ code: 'OTP_UNAVAILABLE', message: 'Kode belum tersedia. Silakan minta kode baru.' });
     }
 
     if (challenge.attemptCount >= challenge.maxAttempts) {

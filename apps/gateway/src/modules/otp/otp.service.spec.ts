@@ -9,6 +9,7 @@ import { WhatsAppSessionsService } from '../whatsapp-sessions/whatsapp-sessions.
 import { BaileysAdapterService } from '../../engine-adapters/baileys/baileys-adapter.service';
 import { BrandEntity } from '../brands/entities/brand.entity';
 import * as crypto from 'crypto';
+import { normalizeOtpTemplate, OTP_SAFETY_FOOTER, renderOtpMessage } from './otp-message';
 
 describe('OtpService', () => {
   let service: OtpService;
@@ -123,6 +124,7 @@ describe('OtpService', () => {
       expect(res.masked_phone).toBe('+62*******789');
       expect(res.ttl_seconds).toBe(300);
       expect(res.delivery_status).toBe('delivered');
+      expect(challengeRepo.create.mock.calls[0][0]).not.toHaveProperty('codePlain');
 
       // Verify delivery call
       expect(baileysAdapter.sendTextMessage).toHaveBeenCalled();
@@ -142,6 +144,23 @@ describe('OtpService', () => {
       ).rejects.toThrow(HttpException);
     });
 
+    it('sends the saved template for the requesting brand with the real code in place of the sample', async () => {
+      const brand = { ...mockBrand, config: JSON.stringify({ otpTemplate: 'Halo, kode :brand adalah :code. Berlaku :minutes menit.' }) };
+      await service.createChallenge(brand, { phone_e164: '+628123456789' });
+      expect(baileysAdapter.sendTextMessage.mock.calls[0][2]).toMatch(
+        /^Halo, kode INTERWIN adalah \*\d{4}\*\. Berlaku 5 menit\./,
+      );
+      expect(baileysAdapter.sendTextMessage.mock.calls[0][2]).toContain(OTP_SAFETY_FOOTER);
+    });
+
+    it('rejects missing, duplicate, and unknown template placeholders', () => {
+      for (const value of ['Kode tetap', ':code sekali lagi :code', ':code :contoh']) {
+        expect(() => normalizeOtpTemplate(value)).toThrow();
+      }
+      expect(renderOtpMessage(JSON.stringify({ otpTemplate: ':code :menit_salah' }), 'BM', '0019'))
+        .toContain('Kode verifikasi BM Anda adalah *0019*');
+    });
+
     it('should throw 503 when no eligible sender is available', async () => {
       challengeRepo.findOne.mockResolvedValue(null);
       sessionsService.selectEligibleSender.mockResolvedValue(null);
@@ -149,6 +168,18 @@ describe('OtpService', () => {
       await expect(
         service.createChallenge(mockBrand, { phone_e164: '+628123456789' }),
       ).rejects.toThrow(HttpException);
+    });
+
+    it('records a failed submission and returns 503 instead of reporting a sent code', async () => {
+      challengeRepo.findOne.mockResolvedValue(null);
+      baileysAdapter.sendTextMessage.mockResolvedValue({ status: 'failed' });
+      await expect(service.createChallenge(mockBrand, { phone_e164: '+628123456789' }))
+        .rejects.toMatchObject({ status: 503, response: { code: 'OTP_SEND_FAILED' } });
+      expect(challengeRepo.save).toHaveBeenLastCalledWith(expect.objectContaining({
+        state: 'failed',
+        deliveryStatus: 'failed',
+      }));
+      expect(deliveryRepo.save).toHaveBeenLastCalledWith(expect.objectContaining({ status: 'failed' }));
     });
   });
 

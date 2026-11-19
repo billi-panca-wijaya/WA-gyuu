@@ -230,6 +230,8 @@ a:hover {
   cursor: pointer;
   border: 1px solid transparent;
   transition: all var(--wgy-motion-fast);
+  white-space: nowrap !important;
+  flex-shrink: 0;
 }
 .wgy-btn:focus-visible {
   outline: none;
@@ -512,24 +514,22 @@ a:hover {
   }
 
   .wgy-header-brand-title {
-    font-size: 0.88rem !important;
-    max-width: 105px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    font-size: 0.9rem !important;
+    white-space: nowrap !important;
+  }
+
+  .wgy-header-user-icon {
+    display: none !important;
   }
 
   .wgy-header-username {
-    max-width: 80px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 0.75rem !important;
+    display: none !important;
   }
 
   .wgy-header-role-badge {
-    font-size: 0.6rem !important;
-    padding: 0.05rem 0.35rem !important;
+    font-size: 0.65rem !important;
+    padding: 0.12rem 0.45rem !important;
+    white-space: nowrap !important;
   }
 
   .wgy-content {
@@ -537,38 +537,44 @@ a:hover {
   }
 
   .wgy-logout-text {
-    display: none;
+    display: none !important;
   }
 
   .wgy-header-logout-btn {
     padding: 0 !important;
-    width: 2.2rem !important;
-    height: 2.2rem !important;
-    min-width: 2.2rem !important;
+    width: 2.25rem !important;
+    height: 2.25rem !important;
+    min-width: 2.25rem !important;
     justify-content: center !important;
   }
 }
 
 @media (max-width: 640px) {
-  .wgy-header-user-icon {
-    display: none !important;
+  .wgy-header-user-wrap {
+    gap: 0.35rem !important;
   }
 
   .wgy-page-header {
     flex-direction: column !important;
     align-items: stretch !important;
-    gap: 0.75rem !important;
+    gap: 0.85rem !important;
   }
 
   .wgy-page-header-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
     width: 100% !important;
-    justify-content: flex-start !important;
   }
 
   .wgy-page-header-actions .wgy-btn {
     flex: 1 1 auto !important;
     white-space: nowrap !important;
     justify-content: center !important;
+    min-height: 2.5rem !important;
+    padding: 0 0.85rem !important;
+    font-size: 0.85rem !important;
   }
 
   .wgy-scroll-fab-container {
@@ -578,8 +584,8 @@ a:hover {
   }
 
   .wgy-scroll-fab {
-    width: 2.2rem !important;
-    height: 2.2rem !important;
+    width: 2.3rem !important;
+    height: 2.3rem !important;
   }
 }
 

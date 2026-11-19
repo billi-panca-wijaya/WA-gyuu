@@ -14,6 +14,7 @@ import { AdminOpsModule } from './modules/admin-ops/admin-ops.module';
 import { Brand } from './modules/brands/entities/brand.entity';
 import { ApiClient } from './modules/brands/entities/api-client.entity';
 import { WhatsAppSession } from './modules/whatsapp-sessions/entities/whatsapp-session.entity';
+import { InboxMessage } from './modules/whatsapp-sessions/entities/inbox-message.entity';
 import { OtpChallenge } from './modules/otp/entities/otp-challenge.entity';
 import { OtpDelivery } from './modules/otp/entities/otp-delivery.entity';
 import { PlatformUser } from './modules/platform-auth/entities/platform-user.entity';
@@ -38,6 +39,7 @@ import { AppController } from './app.controller';
           Brand,
           ApiClient,
           WhatsAppSession,
+          InboxMessage,
           OtpChallenge,
           OtpDelivery,
           PlatformUser,
