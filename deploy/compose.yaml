@@ -9,8 +9,8 @@ services:
     ports:
       - '127.0.0.1:18091:18091'
     environment:
-      - WAGYUU_INBOX_BRANDS=${WAGYUU_INBOX_BRANDS:-}
-      - WAGYUU_INBOX_HISTORY_BRANDS=${WAGYUU_INBOX_HISTORY_BRANDS:-}
+      - WAGYUU_INBOX_BRANDS=${WAGYUU_INBOX_BRANDS:-bmonlineshop,bmolshop,*}
+      - WAGYUU_INBOX_HISTORY_BRANDS=${WAGYUU_INBOX_HISTORY_BRANDS:-bmonlineshop,bmolshop,*}
       - NODE_ENV=production
       - PORT=18091
       - DATABASE_PATH=/app/data/wagyuu.sqlite

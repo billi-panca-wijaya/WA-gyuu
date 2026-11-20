@@ -21,11 +21,18 @@ export class InboxStore {
   }
 
   enabled(brandCode: string): boolean {
-    return this.brands.includes(brandCode.toLowerCase());
+    if (!brandCode) return false;
+    const code = brandCode.toLowerCase().trim();
+    if (this.brands.includes('*')) return true;
+    return this.brands.includes(code) || this.brands.includes(code.replace(/[-_]/g, ''));
   }
 
   historyEnabled(brandCode: string): boolean {
-    return this.enabled(brandCode) && this.historyBrands.includes(brandCode.toLowerCase());
+    if (!brandCode) return false;
+    const code = brandCode.toLowerCase().trim();
+    if (!this.enabled(code)) return false;
+    if (this.historyBrands.includes('*')) return true;
+    return this.historyBrands.includes(code) || this.historyBrands.includes(code.replace(/[-_]/g, ''));
   }
 
   async record(senderId: string, message: InboxText, outgoing = false): Promise<void> {
